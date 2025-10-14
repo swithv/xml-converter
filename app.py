@@ -35,7 +35,7 @@ if os.path.exists("logo.png"):
         # Cria link clicável com o logo usando HTML
         st.markdown(
             f'''
-            <a href="https://www.instagram.com/trr_contabilidade/" target="_blank">
+            <a href="trrcontabil.com" target="_blank">
                 <img src="data:image/png;base64,{img_base64}" width="80" 
                      style="cursor: pointer; transition: opacity 0.3s;" 
                      onmouseover="this.style.opacity='0.7'" 
