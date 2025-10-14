@@ -1,10 +1,12 @@
 """
 Sistema Modular de Conversão e Dashboard de NF-e
-Arquivo: app_main.py
+Arquivo: app.py
 """
 import streamlit as st
 import pandas as pd
 from io import BytesIO
+import base64
+import os
 
 # Importa módulos customizados
 import nfe_parser
@@ -13,7 +15,7 @@ import dashboard_logic
 # Configuração da página
 st.set_page_config(
     page_title="Sistema de NF-e",
-    page_icon="📊",
+    page_icon="logo.png",  # Usa o logo como favicon
     layout="wide"
 )
 
@@ -21,8 +23,35 @@ st.set_page_config(
 if 'df_processado' not in st.session_state:
     st.session_state.df_processado = pd.DataFrame()
 
-# Título principal
-st.title("📊 Sistema de Conversão e Dashboard de NF-e")
+# Cabeçalho com logo clicável
+if os.path.exists("logo.png"):
+    col_logo, col_title = st.columns([1, 8])
+    
+    with col_logo:
+        # Lê o arquivo da imagem e converte para base64
+        with open("logo.png", "rb") as img_file:
+            img_base64 = base64.b64encode(img_file.read()).decode()
+        
+        # Cria link clicável com o logo usando HTML
+        st.markdown(
+            f'''
+            <a href="https://www.instagram.com/trr_contabilidade/" target="_blank">
+                <img src="data:image/png;base64,{img_base64}" width="80" 
+                     style="cursor: pointer; transition: opacity 0.3s;" 
+                     onmouseover="this.style.opacity='0.7'" 
+                     onmouseout="this.style.opacity='1'"
+                     alt="TRR Contabilidade">
+            </a>
+            ''',
+            unsafe_allow_html=True
+        )
+    
+    with col_title:
+        st.title("📊 Sistema de Conversão e Dashboard de NF-e")
+else:
+    # Se não houver logo, exibe título normal
+    st.title("📊 Sistema de Conversão e Dashboard de NF-e")
+
 st.markdown("---")
 
 # Cria as abas
