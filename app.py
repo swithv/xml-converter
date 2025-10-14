@@ -35,7 +35,7 @@ if os.path.exists("logo.png"):
         # Cria link clicável com o logo usando HTML
         st.markdown(
             f'''
-            <a href="trrcontabil.com" target="_blank">
+            <a href="https://www.instagram.com/trr_contabilidade/" target="_blank">
                 <img src="data:image/png;base64,{img_base64}" width="80" 
                      style="cursor: pointer; transition: opacity 0.3s;" 
                      onmouseover="this.style.opacity='0.7'" 
@@ -94,8 +94,26 @@ with tab1:
             selected_fields['CFOP do Item'] = st.checkbox('CFOP do Item')
             selected_fields['Quantidade Comercial'] = st.checkbox('Quantidade Comercial')
             selected_fields['Valor Unitário'] = st.checkbox('Valor Unitário')
+            selected_fields['NCM'] = st.checkbox('NCM')
+            selected_fields['CEST'] = st.checkbox('CEST')
         
-        # Grupo 4: Totais e Impostos
+        # Grupo 4: DIFAL e FCP (Nível do Item)
+        with st.expander("⚖️ DIFAL e FCP (Por Item)", expanded=False):
+            st.caption("📌 Partilha do ICMS Interestadual")
+            selected_fields['BC ICMS UF Destino'] = st.checkbox('Base de Cálculo ICMS UF Destino')
+            selected_fields['Alíquota Interna UF Destino'] = st.checkbox('Alíquota Interna UF Destino (%)')
+            selected_fields['Alíquota Interestadual'] = st.checkbox('Alíquota Interestadual (%)')
+            selected_fields['Percentual Partilha ICMS'] = st.checkbox('Percentual Partilha ICMS (%) ⚠️', 
+                                                                       help="Campo essencial para evitar Rejeição 699")
+            selected_fields['Valor ICMS UF Destino'] = st.checkbox('Valor ICMS para UF Destino')
+            selected_fields['Valor ICMS UF Remetente'] = st.checkbox('Valor ICMS para UF Remetente')
+            
+            st.caption("🛡️ Fundo de Combate à Pobreza")
+            selected_fields['BC FCP UF Destino'] = st.checkbox('Base de Cálculo FCP UF Destino')
+            selected_fields['Percentual FCP UF Destino'] = st.checkbox('Percentual FCP UF Destino (%)')
+            selected_fields['Valor FCP UF Destino'] = st.checkbox('Valor FCP UF Destino')
+        
+        # Grupo 5: Totais e Impostos
         with st.expander("💰 Totais e Impostos", expanded=False):
             selected_fields['Valor Total da NF'] = st.checkbox('Valor Total da NF', value=True)
             selected_fields['Valor Total dos Produtos'] = st.checkbox('Valor Total dos Produtos')
