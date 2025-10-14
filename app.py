@@ -265,8 +265,27 @@ with tab2:
 st.markdown("---")
 st.markdown(
     """
-    <div style='text-align: center; color: #666;'>
-        Sistema de Conversão e Dashboard de NF-e | Desenvolvido com Streamlit
+    <div style='text-align: center; padding: 20px;'>
+        <p style='color: #666; margin-bottom: 15px; font-size: 16px;'>
+            <strong>Sistema de Conversão e Dashboard de NF-e</strong>
+        </p>
+        <div style='display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;'>
+            <a href="https://trrcontabil.com" target="_blank" 
+               style='color: #1f77b4; text-decoration: none; font-size: 14px;'>
+                🌐 trrcontabil.com
+            </a>
+            <a href="https://www.instagram.com/trr_contabilidade/" target="_blank" 
+               style='color: #E4405F; text-decoration: none; font-size: 14px;'>
+                📷 @trr_contabilidade
+            </a>
+            <a href="https://wa.me/5591992412788" target="_blank" 
+               style='color: #25D366; text-decoration: none; font-size: 14px;'>
+                📞 (91) 99241-2788
+            </a>
+        </div>
+        <p style='color: #999; margin-top: 15px; font-size: 12px;'>
+            Desenvolvido com Streamlit ❤️
+        </p>
     </div>
     """,
     unsafe_allow_html=True
