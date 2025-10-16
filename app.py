@@ -32,8 +32,13 @@ st.set_page_config(
 # ============================================
 def apply_custom_theme():
     """Aplica tema CSS profissional - versão otimizada com espaçamento reduzido"""
-    custom_css = """
-    <style>
+    # Hash único para forçar reload do CSS no Streamlit Cloud
+    import hashlib
+    import time
+    css_version = hashlib.md5(str(time.time()).encode()).hexdigest()[:8]
+    
+    custom_css = f"""
+    <style data-version="{css_version}">
     /* Importa fonte */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
@@ -206,18 +211,28 @@ def apply_custom_theme():
         padding: 0 !important;
         line-height: 1.4 !important;
         cursor: pointer !important;
+        flex-direction: row !important;
     }
 
     /* Input checkbox */
     [data-testid="stCheckbox"] input[type="checkbox"] {
         margin: 0 !important;
         flex-shrink: 0 !important;
+        order: -1 !important;
     }
 
     /* Texto do checkbox */
     [data-testid="stCheckbox"] label > div {
         margin: 0 !important;
         padding: 0 !important;
+        display: inline !important;
+    }
+    
+    /* Container do checkbox */
+    [data-testid="stCheckbox"] > label > div:first-child {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
     }
 
     /* Multiselect - correção de sobreposição */
@@ -331,14 +346,30 @@ def apply_custom_theme():
     footer {visibility: hidden;}
     header {visibility: hidden;}
     </style>
+    
+    <script>
+    // Força reflow dos checkboxes após carregamento
+    window.addEventListener('load', function() {{
+        setTimeout(function() {{
+            const checkboxes = document.querySelectorAll('[data-testid="stCheckbox"]');
+            checkboxes.forEach(cb => {{
+                cb.style.display = 'flex';
+                cb.style.alignItems = 'center';
+                const label = cb.querySelector('label');
+                if (label) {{
+                    label.style.display = 'flex';
+                    label.style.flexDirection = 'row';
+                    label.style.alignItems = 'center';
+                    label.style.gap = '0.5rem';
+                }}
+            }});
+        }}, 100);
+    }});
+    </script>
     """
     st.markdown(custom_css, unsafe_allow_html=True)
 
-# Limpa cache para garantir que o CSS carregue
-st.cache_data.clear()
-st.cache_resource.clear()
-
-# Aplica o tema
+# Aplica o tema ANTES de qualquer outro componente
 apply_custom_theme()
 
 # Inicializa session_state
