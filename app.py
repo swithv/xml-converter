@@ -9,31 +9,46 @@ from io import BytesIO
 import base64
 import os
 
+# ADICIONE ESTA LINHA:
+from PIL import Image
+
 # Importa módulos customizados
 import nfe_parser
 import dashboard_logic
 
+# Carrega a imagem
+icon = Image.open("logo.png")
+
 # Configuração da página
 st.set_page_config(
-    page_title="Sistema de NF-e",
-    page_icon="📊",
+    page_title="TRR Smart Converter",
+    page_icon=icon,
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 # ============================================
-# APLICA TEMA CUSTOMIZADO
+# APLICA TEMA CUSTOMIZADO - ESPAÇAMENTO CORRIGIDO
 # ============================================
 def apply_custom_theme():
-    """Aplica tema CSS profissional"""
+    """Aplica tema CSS profissional - versão otimizada com espaçamento reduzido"""
     custom_css = """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    /* Importa fonte */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    /* Reset básico */
+    * { 
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        box-sizing: border-box;
+    }
     
-    .stApp { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); }
+    /* Fundo da aplicação */
+    .stApp { 
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
     
+    /* Container principal */
     .main .block-container {
         max-width: 1400px;
         padding: 2rem 3rem;
@@ -41,31 +56,34 @@ def apply_custom_theme():
         border-radius: 20px;
         box-shadow: 0 10px 40px rgba(27, 0, 255, 0.08);
         margin: 2rem auto;
-        animation: fadeIn 0.5s ease-out;
     }
     
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
+    /* Títulos */
     h1 {
         color: #1B00FF !important;
         font-weight: 700 !important;
         font-size: 2.5rem !important;
         text-align: center;
-        background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        margin-bottom: 1rem !important;
     }
     
     h2 {
         color: #2C3E50 !important;
         font-weight: 600 !important;
+        font-size: 1.75rem !important;
         border-left: 4px solid #1B00FF;
         padding-left: 1rem;
+        margin: 2rem 0 1rem 0 !important;
     }
     
+    h3 {
+        color: #34495E !important;
+        font-weight: 600 !important;
+        font-size: 1.3rem !important;
+        margin-top: 1.5rem !important;
+    }
+    
+    /* Abas (Tabs) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #f8f9fa;
@@ -76,8 +94,9 @@ def apply_custom_theme():
     .stTabs [data-baseweb="tab"] {
         height: 50px;
         border-radius: 8px;
+        color: #6c757d;
         font-weight: 500;
-        transition: all 0.3s ease;
+        padding: 0 24px;
     }
     
     .stTabs [aria-selected="true"] {
@@ -86,13 +105,13 @@ def apply_custom_theme():
         box-shadow: 0 4px 12px rgba(27, 0, 255, 0.3);
     }
     
+    /* File Uploader */
     [data-testid="stFileUploader"] {
         background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
         border: 2px dashed #1B00FF;
         border-radius: 16px;
         padding: 2rem;
         box-shadow: 0 4px 12px rgba(27, 0, 255, 0.08);
-        transition: all 0.3s ease;
     }
     
     [data-testid="stFileUploader"]:hover {
@@ -100,7 +119,9 @@ def apply_custom_theme():
         transform: translateY(-2px);
     }
     
-    .stButton > button, .stDownloadButton > button {
+    /* Botões */
+    .stButton > button,
+    .stDownloadButton > button {
         background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%) !important;
         color: white !important;
         border: none !important;
@@ -111,17 +132,19 @@ def apply_custom_theme():
         transition: all 0.3s ease !important;
     }
     
-    .stButton > button:hover, .stDownloadButton > button:hover {
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
         box-shadow: 0 6px 20px rgba(27, 0, 255, 0.4) !important;
         transform: translateY(-2px) !important;
     }
     
+    /* Métricas */
     [data-testid="stMetric"] {
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         padding: 1.5rem;
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s ease;
+        border: 1px solid #e9ecef;
     }
     
     [data-testid="stMetric"]:hover {
@@ -132,14 +155,50 @@ def apply_custom_theme():
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
         color: #1B00FF !important;
         font-weight: 700 !important;
+        font-size: 2rem !important;
     }
     
+    [data-testid="stMetric"] label {
+        color: #6c757d !important;
+        font-weight: 600 !important;
+    }
+    
+    /* ========================================
+       EXPANDERS - ESPAÇAMENTO CORRIGIDO
+    ======================================== */
     [data-testid="stExpander"] {
         background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
         border-radius: 12px;
+        margin: 0.5rem 0 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
     
+    [data-testid="stExpander"] summary {
+        font-weight: 600 !important;
+        color: #1B00FF !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+    }
+    
+    [data-testid="stExpander"] > div:nth-child(2) {
+        padding: 1rem !important;
+    }
+    
+    /* Remove espaço extra entre expanders */
+    .element-container:has([data-testid="stExpander"]) {
+        margin-bottom: 0 !important;
+    }
+    
+    /* Checkbox - espaçamento reduzido */
+    [data-testid="stCheckbox"] {
+        padding: 0.25rem 0 !important;
+        margin: 0.25rem 0 !important;
+    }
+    
+    /* ======================================== */
+    
+    /* Multiselect tags */
     [data-baseweb="tag"] {
         background-color: #1B00FF !important;
         color: white !important;
@@ -147,23 +206,81 @@ def apply_custom_theme():
         font-weight: 500 !important;
     }
     
-    ::-webkit-scrollbar { width: 10px; }
-    ::-webkit-scrollbar-track { background: #f1f3f5; border-radius: 10px; }
+    /* Alertas */
+    .stAlert {
+        border-radius: 12px;
+        border-left-width: 4px;
+        padding: 1rem 1.25rem;
+    }
+    
+    /* Info boxes */
+    [data-testid="stMarkdownContainer"] > div > div {
+        line-height: 1.6;
+    }
+    
+    /* Scrollbar customizado */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #f1f3f5;
+        border-radius: 10px;
+    }
+    
     ::-webkit-scrollbar-thumb {
         background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%);
         border-radius: 10px;
     }
     
-    @media (max-width: 768px) {
-        .main .block-container { padding: 1rem; }
-        h1 { font-size: 1.8rem !important; }
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #5B3FFF 0%, #1B00FF 100%);
     }
     
+    /* Dataframe */
+    [data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* Responsividade Mobile */
+    @media (max-width: 768px) {
+        .main .block-container {
+            padding: 1rem;
+            margin: 1rem;
+        }
+        
+        h1 {
+            font-size: 1.8rem !important;
+        }
+        
+        h2 {
+            font-size: 1.4rem !important;
+        }
+        
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            font-size: 1.5rem !important;
+        }
+        
+        [data-testid="stExpander"] summary {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.9rem !important;
+        }
+    }
+    
+    /* Oculta menu padrão */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
     </style>
     """
     st.markdown(custom_css, unsafe_allow_html=True)
+
+# Limpa cache para garantir que o CSS carregue
+st.cache_data.clear()
+st.cache_resource.clear()
 
 # Aplica o tema
 apply_custom_theme()
