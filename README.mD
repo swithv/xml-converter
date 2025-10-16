@@ -352,16 +352,6 @@ print(f"{nfe_com_difal} NF-e(s) com DIFAL")
 
 ---
 
-## 📞 Suporte
-
-**TRR Contabilidade**
-
-- 🌐 Website: [trrcontabil.com](https://trrcontabil.com)
-- 📷 Instagram: [@trr_contabilidade](https://www.instagram.com/trr_contabilidade/)
-- 📞 WhatsApp: [(91) 99241-2788](https://wa.me/5591992412788)
-
----
-
 ## 📝 Changelog
 
 ### v2.0.0 (Versão Final) - 16/10/2025
