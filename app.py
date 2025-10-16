@@ -1,59 +1,78 @@
 """
 Sistema Modular de Conversão e Dashboard de NF-e
 Versão FINAL - 100% conforme leiaute oficial
-Arquivo: app.py
+Arquivo: app.py - Refatorado com boas práticas
 """
 import streamlit as st
 import pandas as pd
 from io import BytesIO
 import base64
 import os
-
-# ADICIONE ESTA LINHA:
-from PIL import Image
+from pathlib import Path
 
 # Importa módulos customizados
 import nfe_parser
 import dashboard_logic
 
-# Carrega a imagem
-icon = Image.open("logo.png")
-
-# Configuração da página
-st.set_page_config(
-    page_title="TRR Smart Converter",
-    page_icon=icon,
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# Importa PIL para o ícone
+try:
+    from PIL import Image
+except ImportError:
+    Image = None
 
 # ============================================
-# APLICA TEMA CUSTOMIZADO - ESPAÇAMENTO CORRIGIDO
+# CONSTANTES
 # ============================================
-def apply_custom_theme():
-    """Aplica tema CSS profissional - versão otimizada com espaçamento reduzido"""
-    # Hash único para forçar reload do CSS no Streamlit Cloud
-    import hashlib
-    import time
-    css_version = hashlib.md5(str(time.time()).encode()).hexdigest()[:8]
+PAGE_TITLE = "TRR Smart Converter"
+PAGE_ICON_PATH = "logo.png"
+LAYOUT = "wide"
+
+# ============================================
+# CONFIGURAÇÃO DA PÁGINA
+# ============================================
+def setup_page():
+    """Configura parâmetros iniciais da página Streamlit."""
+    page_config = {
+        "page_title": PAGE_TITLE,
+        "layout": LAYOUT,
+        "initial_sidebar_state": "collapsed"
+    }
     
-    custom_css = f"""
-    <style data-version="{css_version}">
-    /* Importa fonte */
+    # Adiciona ícone se existir
+    if Image and Path(PAGE_ICON_PATH).exists():
+        try:
+            icon = Image.open(PAGE_ICON_PATH)
+            page_config["page_icon"] = icon
+        except Exception:
+            pass
+    
+    st.set_page_config(**page_config)
+
+
+# ============================================
+# TEMA CSS - Separado em arquivo de estilo
+# ============================================
+def get_custom_css():
+    """Retorna CSS customizado como string."""
+    return """
+    <style>
+    /* ========================================
+       IMPORTAÇÕES E RESET
+    ======================================== */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    /* Reset básico */
     * { 
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
         box-sizing: border-box;
     }
     
-    /* Fundo da aplicação */
+    /* ========================================
+       LAYOUT PRINCIPAL
+    ======================================== */
     .stApp { 
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     }
     
-    /* Container principal */
     .main .block-container {
         max-width: 1400px;
         padding: 2rem 3rem;
@@ -63,7 +82,9 @@ def apply_custom_theme():
         margin: 2rem auto;
     }
     
-    /* Títulos */
+    /* ========================================
+       TIPOGRAFIA
+    ======================================== */
     h1 {
         color: #1B00FF !important;
         font-weight: 700 !important;
@@ -88,7 +109,9 @@ def apply_custom_theme():
         margin-top: 1.5rem !important;
     }
     
-    /* Abas (Tabs) */
+    /* ========================================
+       COMPONENTES - TABS
+    ======================================== */
     .stTabs [data-baseweb="tab-list"] {
         gap: 8px;
         background-color: #f8f9fa;
@@ -110,13 +133,16 @@ def apply_custom_theme():
         box-shadow: 0 4px 12px rgba(27, 0, 255, 0.3);
     }
     
-    /* File Uploader */
+    /* ========================================
+       COMPONENTES - FILE UPLOADER
+    ======================================== */
     [data-testid="stFileUploader"] {
         background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
         border: 2px dashed #1B00FF;
         border-radius: 16px;
         padding: 2rem;
         box-shadow: 0 4px 12px rgba(27, 0, 255, 0.08);
+        transition: all 0.3s ease;
     }
     
     [data-testid="stFileUploader"]:hover {
@@ -124,7 +150,9 @@ def apply_custom_theme():
         transform: translateY(-2px);
     }
     
-    /* Botões */
+    /* ========================================
+       COMPONENTES - BOTÕES
+    ======================================== */
     .stButton > button,
     .stDownloadButton > button {
         background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%) !important;
@@ -143,13 +171,16 @@ def apply_custom_theme():
         transform: translateY(-2px) !important;
     }
     
-    /* Métricas */
+    /* ========================================
+       COMPONENTES - MÉTRICAS
+    ======================================== */
     [data-testid="stMetric"] {
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         padding: 1.5rem;
         border-radius: 16px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
         border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
     }
     
     [data-testid="stMetric"]:hover {
@@ -169,7 +200,7 @@ def apply_custom_theme():
     }
     
     /* ========================================
-       EXPANDERS - ESPAÇAMENTO CORRIGIDO
+       COMPONENTES - EXPANDERS
     ======================================== */
     [data-testid="stExpander"] {
         background-color: #f8f9fa;
@@ -193,49 +224,34 @@ def apply_custom_theme():
         margin-top: 0 !important;
     }
 
-    /* Checkbox - corrige alinhamento e espaçamento */
+    /* ========================================
+       COMPONENTES - CHECKBOXES (CORRIGIDO)
+    ======================================== */
     [data-testid="stCheckbox"] {
         padding: 0.4rem 0 !important;
         margin: 0.3rem 0 !important;
         min-height: auto !important;
-        display: flex !important;
-        align-items: center !important;
     }
 
-    /* Label do checkbox - alinha ao lado da checkbox */
     [data-testid="stCheckbox"] label {
         display: flex !important;
+        flex-direction: row !important;
         align-items: center !important;
         gap: 0.5rem !important;
         margin: 0 !important;
         padding: 0 !important;
         line-height: 1.4 !important;
         cursor: pointer !important;
-        flex-direction: row !important;
     }
 
-    /* Input checkbox */
     [data-testid="stCheckbox"] input[type="checkbox"] {
-        margin: 0 !important;
+        margin: 0 0.5rem 0 0 !important;
         flex-shrink: 0 !important;
-        order: -1 !important;
     }
 
-    /* Texto do checkbox */
-    [data-testid="stCheckbox"] label > div {
-        margin: 0 !important;
-        padding: 0 !important;
-        display: inline !important;
-    }
-    
-    /* Container do checkbox */
-    [data-testid="stCheckbox"] > label > div:first-child {
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-    }
-
-    /* Multiselect - correção de sobreposição */
+    /* ========================================
+       COMPONENTES - MULTISELECT
+    ======================================== */
     [data-testid="stMultiSelect"] {
         margin: 0.5rem 0 !important;
         min-height: auto !important;
@@ -245,19 +261,6 @@ def apply_custom_theme():
         margin-bottom: 0.4rem !important;
     }
     
-    /* Captions dentro dos expanders */
-    [data-testid="stExpander"] .stMarkdown p {
-        margin: 0.5rem 0 !important;
-        font-size: 0.9rem !important;
-    }
-    
-    [data-testid="stExpander"] .element-container + .element-container {
-        margin-top: 0.3rem !important;
-    }
-    
-    /* ======================================== */
-    
-    /* Multiselect tags */
     [data-baseweb="tag"] {
         background-color: #1B00FF !important;
         color: white !important;
@@ -265,19 +268,27 @@ def apply_custom_theme():
         font-weight: 500 !important;
     }
     
-    /* Alertas */
+    /* ========================================
+       COMPONENTES - ALERTAS
+    ======================================== */
     .stAlert {
         border-radius: 12px;
         border-left-width: 4px;
         padding: 1rem 1.25rem;
     }
     
-    /* Info boxes */
-    [data-testid="stMarkdownContainer"] > div > div {
-        line-height: 1.6;
+    /* ========================================
+       COMPONENTES - DATAFRAME
+    ======================================== */
+    [data-testid="stDataFrame"] {
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
     
-    /* Scrollbar customizado */
+    /* ========================================
+       SCROLLBAR CUSTOMIZADO
+    ======================================== */
     ::-webkit-scrollbar {
         width: 10px;
         height: 10px;
@@ -297,27 +308,17 @@ def apply_custom_theme():
         background: linear-gradient(135deg, #5B3FFF 0%, #1B00FF 100%);
     }
     
-    /* Dataframe */
-    [data-testid="stDataFrame"] {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-    
-    /* Responsividade Mobile */
+    /* ========================================
+       RESPONSIVIDADE MOBILE
+    ======================================== */
     @media (max-width: 768px) {
         .main .block-container {
             padding: 1rem;
             margin: 1rem;
         }
         
-        h1 {
-            font-size: 1.8rem !important;
-        }
-        
-        h2 {
-            font-size: 1.4rem !important;
-        }
+        h1 { font-size: 1.8rem !important; }
+        h2 { font-size: 1.4rem !important; }
         
         [data-testid="stMetric"] [data-testid="stMetricValue"] {
             font-size: 1.5rem !important;
@@ -341,180 +342,167 @@ def apply_custom_theme():
         }
     }
     
-    /* Oculta menu padrão */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    /* ========================================
+       OCULTA ELEMENTOS PADRÃO
+    ======================================== */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    header { visibility: hidden; }
     </style>
-    
-    <script>
-    // Força reflow dos checkboxes após carregamento
-    window.addEventListener('load', function() {{
-        setTimeout(function() {{
-            const checkboxes = document.querySelectorAll('[data-testid="stCheckbox"]');
-            checkboxes.forEach(cb => {{
-                cb.style.display = 'flex';
-                cb.style.alignItems = 'center';
-                const label = cb.querySelector('label');
-                if (label) {{
-                    label.style.display = 'flex';
-                    label.style.flexDirection = 'row';
-                    label.style.alignItems = 'center';
-                    label.style.gap = '0.5rem';
-                }}
-            }});
-        }}, 100);
-    }});
-    </script>
     """
-    st.markdown(custom_css, unsafe_allow_html=True)
 
-# Aplica o tema ANTES de qualquer outro componente
-apply_custom_theme()
 
-# Inicializa session_state
-if 'df_processado' not in st.session_state:
-    st.session_state.df_processado = pd.DataFrame()
+def apply_custom_theme():
+    """Aplica tema CSS customizado."""
+    st.markdown(get_custom_css(), unsafe_allow_html=True)
 
-# Cabeçalho com logo
-if os.path.exists("logo.png"):
-    col_logo, col_title = st.columns([1, 8])
-    
-    with col_logo:
-        with open("logo.png", "rb") as img_file:
-            img_base64 = base64.b64encode(img_file.read()).decode()
+
+# ============================================
+# COMPONENTES DE UI
+# ============================================
+def render_logo():
+    """Renderiza logo e título da aplicação."""
+    if Path(PAGE_ICON_PATH).exists():
+        col_logo, col_title = st.columns([1, 8])
         
-        st.markdown(
-            f'''
-            <a href="https://www.instagram.com/trr_contabilidade/" target="_blank">
-                <img src="data:image/png;base64,{img_base64}" width="80" 
-                     style="cursor: pointer; transition: opacity 0.3s;" 
-                     onmouseover="this.style.opacity='0.7'" 
-                     onmouseout="this.style.opacity='1'"
-                     alt="TRR Contabilidade">
-            </a>
-            ''',
-            unsafe_allow_html=True
-        )
-    
-    with col_title:
+        with col_logo:
+            with open(PAGE_ICON_PATH, "rb") as img_file:
+                img_base64 = base64.b64encode(img_file.read()).decode()
+            
+            st.markdown(
+                f'''
+                <a href="https://www.instagram.com/trr_contabilidade/" target="_blank">
+                    <img src="data:image/png;base64,{img_base64}" width="80" 
+                         style="cursor: pointer; transition: opacity 0.3s;" 
+                         onmouseover="this.style.opacity='0.7'" 
+                         onmouseout="this.style.opacity='1'"
+                         alt="TRR Contabilidade">
+                </a>
+                ''',
+                unsafe_allow_html=True
+            )
+        
+        with col_title:
+            st.title("📊 Sistema de Conversão e Dashboard de NF-e")
+    else:
         st.title("📊 Sistema de Conversão e Dashboard de NF-e")
-else:
-    st.title("📊 Sistema de Conversão e Dashboard de NF-e")
 
-st.markdown("---")
 
-# Abas
-tab1, tab2 = st.tabs(["🔄 Conversor XML → XLSX", "📈 Dashboard"])
+def render_field_filters():
+    """Renderiza filtros de campos para seleção."""
+    st.subheader("Filtros de Campos")
+    
+    # Perfis rápidos
+    st.markdown("**⚡ Perfis Rápidos:**")
+    col_p1, col_p2, col_p3 = st.columns(3)
+    
+    with col_p1:
+        perfil_basico = st.button("🔹 Básico", help="Campos essenciais")
+    with col_p2:
+        perfil_completo = st.button("🔸 Completo", help="Todos os campos")
+    with col_p3:
+        perfil_limpar = st.button("⭕ Limpar", help="Desmarcar todos")
+    
+    selected_fields = {}
+    
+    # Grupo B/A: Identificação
+    with st.expander("🔍 Identificação e Protocolo (Grupo B/A)", expanded=True):
+        selected_fields['Chave de Acesso'] = st.checkbox('Chave de Acesso (ID A03)', value=True if not perfil_limpar else False)
+        selected_fields['Número da NF'] = st.checkbox('Número da NF (ID B08)', value=True if not perfil_limpar else False)
+        selected_fields['Série'] = st.checkbox('Série (ID B07)', value=perfil_completo)
+        selected_fields['Data e Hora de Emissão'] = st.checkbox('Data e Hora de Emissão (ID B09)', value=True if not perfil_limpar else False)
+        selected_fields['Natureza da Operação'] = st.checkbox('Natureza da Operação (ID B05)', value=True if not perfil_limpar else False)
+        selected_fields['Modelo'] = st.checkbox('Modelo (ID B06)', value=perfil_completo)
+        selected_fields['Versão'] = st.checkbox('Versão (ID A02)', value=perfil_completo)
+        selected_fields['Status do Protocolo'] = st.checkbox('Status do Protocolo', value=perfil_completo)
+    
+    # Grupo C: Emitente
+    with st.expander("👤 Emitente (Grupo C)", expanded=False):
+        selected_fields['CNPJ do Emitente'] = st.checkbox('CNPJ/CPF do Emitente (ID C02/C02a)', value=perfil_completo)
+        selected_fields['Razão Social Emitente'] = st.checkbox('Razão Social (ID C03)', value=True if not perfil_limpar else False)
+        selected_fields['Nome Fantasia Emitente'] = st.checkbox('Nome Fantasia (ID C04)', value=perfil_completo)
+    
+    # Grupo E: Destinatário
+    with st.expander("👥 Destinatário (Grupo E)", expanded=False):
+        selected_fields['CNPJ do Destinatário'] = st.checkbox('CNPJ/CPF Destinatário (ID E02/E03)', value=perfil_completo)
+        selected_fields['Razão Social Destinatário'] = st.checkbox('Razão Social (ID E04)', value=perfil_completo)
+        selected_fields['Inscrição Estadual Destinatário'] = st.checkbox('Inscrição Estadual (ID E17)', value=perfil_completo)
+    
+    # Grupo I: Detalhes dos Produtos
+    with st.expander("📦 Detalhes dos Produtos (Grupo I)", expanded=True):
+        st.caption("**Campos Essenciais do Produto**")
+        selected_fields['Número do Item'] = st.checkbox('Nº Item (ID H02)', value=True if not perfil_limpar else False)
+        selected_fields['Cód. Produto'] = st.checkbox('Cód. Produto (ID I02)', value=True if not perfil_limpar else False)
+        selected_fields['Código EAN'] = st.checkbox('Código EAN/GTIN (ID I03)', value=perfil_completo)
+        selected_fields['Descrição do Produto'] = st.checkbox('Descrição do Produto (ID I04)', value=True if not perfil_limpar else False)
+        selected_fields['NCM'] = st.checkbox('NCM (ID I05)', value=True if not perfil_limpar else False)
+        selected_fields['CEST'] = st.checkbox('CEST (ID I08)', value=perfil_completo)
+        selected_fields['CFOP do Item'] = st.checkbox('CFOP (ID I09)', value=True if not perfil_limpar else False)
+        
+        st.caption("**Quantidades e Valores**")
+        selected_fields['Unidade Comercial'] = st.checkbox('Unidade Comercial (ID I10)', value=True if not perfil_limpar else False)
+        selected_fields['Quantidade Comercial'] = st.checkbox('Quantidade Comercial (ID I11)', value=True if not perfil_limpar else False)
+        selected_fields['Valor Unitário'] = st.checkbox('Valor Unitário (ID I12)', value=True if not perfil_limpar else False)
+        selected_fields['Valor Total Item'] = st.checkbox('Valor Total Item (ID I13)', value=True if not perfil_limpar else False)
+    
+    # Grupo N: ICMS
+    with st.expander("💸 ICMS por Item (Grupo N)", expanded=False):
+        st.caption("**Campos de ICMS (todos os CST)**")
+        selected_fields['Origem da Mercadoria'] = st.checkbox('Origem da Mercadoria (ID N11)', value=perfil_completo)
+        selected_fields['CST ICMS'] = st.checkbox('CST ICMS (ID N12)', value=perfil_completo)
+        selected_fields['Modalidade BC ICMS'] = st.checkbox('Modalidade BC (ID N13)', value=perfil_completo)
+        selected_fields['Base Cálculo ICMS'] = st.checkbox('Base de Cálculo ICMS (ID N15)', value=True if perfil_basico or perfil_completo else False)
+        selected_fields['Alíquota ICMS'] = st.checkbox('Alíquota ICMS % (ID N16)', value=True if perfil_basico or perfil_completo else False)
+        selected_fields['Valor ICMS'] = st.checkbox('Valor ICMS (ID N17)', value=True if perfil_basico or perfil_completo else False)
+    
+    # Grupos O, Q, S: Outros Impostos
+    with st.expander("📊 Outros Impostos (Grupos O/Q/S)", expanded=False):
+        selected_fields['Valor IPI'] = st.checkbox('Valor IPI (Grupo O)', value=perfil_completo)
+        selected_fields['Valor PIS'] = st.checkbox('Valor PIS (Grupo Q)', value=perfil_completo)
+        selected_fields['Valor COFINS'] = st.checkbox('Valor COFINS (Grupo S)', value=perfil_completo)
+    
+    # Grupo NA: ICMSUFDest - DIFAL
+    with st.expander("⚖️ DIFAL - Grupo ICMSUFDest (Grupo NA)", expanded=False):
+        st.caption("**📌 Partilha do ICMS Interestadual**")
+        st.info("Preencher apenas em operações interestaduais destinadas a consumidor final não contribuinte.")
+        
+        selected_fields['BC ICMS UF Destino'] = st.checkbox('BC ICMS UF Destino (ID NA03)', value=perfil_completo)
+        selected_fields['Alíquota Interna UF Destino'] = st.checkbox('Alíquota Interna UF Destino % (ID NA07)', value=perfil_completo)
+        selected_fields['Alíquota Interestadual'] = st.checkbox('Alíquota Interestadual % (ID NA09)', value=perfil_completo)
+        selected_fields['Percentual Partilha ICMS'] = st.checkbox(
+            'Percentual Partilha ICMS % (ID NA11) ⚠️',
+            value=perfil_completo,
+            help="CRÍTICO: Campo essencial para evitar Rejeição 699. Obrigatório quando há DIFAL."
+        )
+        selected_fields['Valor ICMS UF Destino'] = st.checkbox('Valor ICMS UF Destino (ID NA15)', value=perfil_completo)
+        selected_fields['Valor ICMS UF Remetente'] = st.checkbox('Valor ICMS UF Remetente (ID NA17)', value=perfil_completo)
+        
+        st.caption("**🛡️ Fundo de Combate à Pobreza (FCP)**")
+        selected_fields['BC FCP UF Destino'] = st.checkbox('BC FCP UF Destino (ID NA04)', value=perfil_completo)
+        selected_fields['Percentual FCP UF Destino'] = st.checkbox('Percentual FCP UF Destino % (ID NA05)', value=perfil_completo)
+        selected_fields['Valor FCP UF Destino'] = st.checkbox('Valor FCP UF Destino (ID NA13)', value=perfil_completo)
+    
+    # Grupo W: Totais
+    with st.expander("💰 Totais da NF-e (Grupo W)", expanded=False):
+        selected_fields['Valor Total da NF'] = st.checkbox('Valor Total da NF (ID W29)', value=True if not perfil_limpar else False)
+        selected_fields['Valor Total dos Produtos'] = st.checkbox('Valor Total dos Produtos (ID W12)', value=perfil_completo)
+        selected_fields['Valor Total do ICMS'] = st.checkbox('Valor Total do ICMS (ID W14)', value=perfil_completo)
+        selected_fields['Valor Total do IPI'] = st.checkbox('Valor Total do IPI (ID W16)', value=perfil_completo)
+    
+    return selected_fields
 
-# ==================== ABA 1: CONVERSOR ====================
-with tab1:
+
+def render_converter_tab():
+    """Renderiza aba de conversão de XML para XLSX."""
     st.header("Conversor de NF-e (XML para XLSX)")
     
-    # Aviso importante sobre granularidade
     st.info("⚠️ **IMPORTANTE**: O sistema gera **UMA LINHA POR ITEM** de produto (tag `<det>`), não por Nota Fiscal.")
     st.caption("📘 **Conforme leiaute oficial**: http://moc.sped.fazenda.pr.gov.br/Leiaute.html")
     
     col1, col2 = st.columns([1, 2])
     
     with col1:
-        st.subheader("Filtros de Campos")
-        
-        # Botão para perfil rápido
-        st.markdown("**⚡ Perfis Rápidos:**")
-        col_p1, col_p2, col_p3 = st.columns(3)
-        with col_p1:
-            perfil_basico = st.button("🔹 Básico", help="Campos essenciais")
-        with col_p2:
-            perfil_completo = st.button("🔸 Completo", help="Todos os campos")
-        with col_p3:
-            perfil_limpar = st.button("⭕ Limpar", help="Desmarcar todos")
-        
-        selected_fields = {}
-        
-        # Grupo B/A: Identificação
-        with st.expander("🔍 Identificação e Protocolo (Grupo B/A)", expanded=True):
-            selected_fields['Chave de Acesso'] = st.checkbox('Chave de Acesso (ID A03)', value=True if not perfil_limpar else False)
-            selected_fields['Número da NF'] = st.checkbox('Número da NF (ID B08)', value=True if not perfil_limpar else False)
-            selected_fields['Série'] = st.checkbox('Série (ID B07)', value=perfil_completo)
-            selected_fields['Data e Hora de Emissão'] = st.checkbox('Data e Hora de Emissão (ID B09)', value=True if not perfil_limpar else False)
-            selected_fields['Natureza da Operação'] = st.checkbox('Natureza da Operação (ID B05)', value=True if not perfil_limpar else False)
-            selected_fields['Modelo'] = st.checkbox('Modelo (ID B06)', value=perfil_completo)
-            selected_fields['Versão'] = st.checkbox('Versão (ID A02)', value=perfil_completo)
-            selected_fields['Status do Protocolo'] = st.checkbox('Status do Protocolo', value=perfil_completo)
-        
-        # Grupo C: Emitente
-        with st.expander("👤 Emitente (Grupo C)", expanded=False):
-            selected_fields['CNPJ do Emitente'] = st.checkbox('CNPJ/CPF do Emitente (ID C02/C02a)', value=perfil_completo)
-            selected_fields['Razão Social Emitente'] = st.checkbox('Razão Social (ID C03)', value=True if not perfil_limpar else False)
-            selected_fields['Nome Fantasia Emitente'] = st.checkbox('Nome Fantasia (ID C04)', value=perfil_completo)
-        
-        # Grupo E: Destinatário
-        with st.expander("👥 Destinatário (Grupo E)", expanded=False):
-            selected_fields['CNPJ do Destinatário'] = st.checkbox('CNPJ/CPF Destinatário (ID E02/E03)', value=perfil_completo)
-            selected_fields['Razão Social Destinatário'] = st.checkbox('Razão Social (ID E04)', value=perfil_completo)
-            selected_fields['Inscrição Estadual Destinatário'] = st.checkbox('Inscrição Estadual (ID E17)', value=perfil_completo)
-        
-        # Grupo I: Detalhes dos Produtos
-        with st.expander("📦 Detalhes dos Produtos (Grupo I)", expanded=True):
-            st.caption("**Campos Essenciais do Produto**")
-            selected_fields['Número do Item'] = st.checkbox('Nº Item (ID H02)', value=True if not perfil_limpar else False)
-            selected_fields['Cód. Produto'] = st.checkbox('Cód. Produto (ID I02)', value=True if not perfil_limpar else False)
-            selected_fields['Código EAN'] = st.checkbox('Código EAN/GTIN (ID I03)', value=perfil_completo)
-            selected_fields['Descrição do Produto'] = st.checkbox('Descrição do Produto (ID I04)', value=True if not perfil_limpar else False)
-            selected_fields['NCM'] = st.checkbox('NCM (ID I05)', value=True if not perfil_limpar else False)
-            selected_fields['CEST'] = st.checkbox('CEST (ID I08)', value=perfil_completo)
-            selected_fields['CFOP do Item'] = st.checkbox('CFOP (ID I09)', value=True if not perfil_limpar else False)
-            
-            st.caption("**Quantidades e Valores**")
-            selected_fields['Unidade Comercial'] = st.checkbox('Unidade Comercial (ID I10)', value=True if not perfil_limpar else False)
-            selected_fields['Quantidade Comercial'] = st.checkbox('Quantidade Comercial (ID I11)', value=True if not perfil_limpar else False)
-            selected_fields['Valor Unitário'] = st.checkbox('Valor Unitário (ID I12)', value=True if not perfil_limpar else False)
-            selected_fields['Valor Total Item'] = st.checkbox('Valor Total Item (ID I13)', value=True if not perfil_limpar else False)
-        
-        # Grupo N: ICMS
-        with st.expander("💸 ICMS por Item (Grupo N)", expanded=False):
-            st.caption("**Campos de ICMS (todos os CST)**")
-            selected_fields['Origem da Mercadoria'] = st.checkbox('Origem da Mercadoria (ID N11)', value=perfil_completo)
-            selected_fields['CST ICMS'] = st.checkbox('CST ICMS (ID N12)', value=perfil_completo)
-            selected_fields['Modalidade BC ICMS'] = st.checkbox('Modalidade BC (ID N13)', value=perfil_completo)
-            selected_fields['Base Cálculo ICMS'] = st.checkbox('Base de Cálculo ICMS (ID N15)', value=True if perfil_basico or perfil_completo else False)
-            selected_fields['Alíquota ICMS'] = st.checkbox('Alíquota ICMS % (ID N16)', value=True if perfil_basico or perfil_completo else False)
-            selected_fields['Valor ICMS'] = st.checkbox('Valor ICMS (ID N17)', value=True if perfil_basico or perfil_completo else False)
-        
-        # Grupos O, Q, S: Outros Impostos
-        with st.expander("📊 Outros Impostos (Grupos O/Q/S)", expanded=False):
-            selected_fields['Valor IPI'] = st.checkbox('Valor IPI (Grupo O)', value=perfil_completo)
-            selected_fields['Valor PIS'] = st.checkbox('Valor PIS (Grupo Q)', value=perfil_completo)
-            selected_fields['Valor COFINS'] = st.checkbox('Valor COFINS (Grupo S)', value=perfil_completo)
-        
-        # Grupo NA: ICMSUFDest - DIFAL
-        with st.expander("⚖️ DIFAL - Grupo ICMSUFDest (Grupo NA)", expanded=False):
-            st.caption("**📌 Partilha do ICMS Interestadual**")
-            st.info("Preencher apenas em operações interestaduais destinadas a consumidor final não contribuinte.")
-            
-            selected_fields['BC ICMS UF Destino'] = st.checkbox('BC ICMS UF Destino (ID NA03)', value=perfil_completo)
-            selected_fields['Alíquota Interna UF Destino'] = st.checkbox('Alíquota Interna UF Destino % (ID NA07)', value=perfil_completo)
-            selected_fields['Alíquota Interestadual'] = st.checkbox('Alíquota Interestadual % (ID NA09)', value=perfil_completo)
-            selected_fields['Percentual Partilha ICMS'] = st.checkbox(
-                'Percentual Partilha ICMS % (ID NA11) ⚠️',
-                value=perfil_completo,
-                help="CRÍTICO: Campo essencial para evitar Rejeição 699. Obrigatório quando há DIFAL."
-            )
-            selected_fields['Valor ICMS UF Destino'] = st.checkbox('Valor ICMS UF Destino (ID NA15)', value=perfil_completo)
-            selected_fields['Valor ICMS UF Remetente'] = st.checkbox('Valor ICMS UF Remetente (ID NA17)', value=perfil_completo)
-            
-            st.caption("**🛡️ Fundo de Combate à Pobreza (FCP)**")
-            selected_fields['BC FCP UF Destino'] = st.checkbox('BC FCP UF Destino (ID NA04)', value=perfil_completo)
-            selected_fields['Percentual FCP UF Destino'] = st.checkbox('Percentual FCP UF Destino % (ID NA05)', value=perfil_completo)
-            selected_fields['Valor FCP UF Destino'] = st.checkbox('Valor FCP UF Destino (ID NA13)', value=perfil_completo)
-        
-        # Grupo W: Totais
-        with st.expander("💰 Totais da NF-e (Grupo W)", expanded=False):
-            selected_fields['Valor Total da NF'] = st.checkbox('Valor Total da NF (ID W29)', value=True if not perfil_limpar else False)
-            selected_fields['Valor Total dos Produtos'] = st.checkbox('Valor Total dos Produtos (ID W12)', value=perfil_completo)
-            selected_fields['Valor Total do ICMS'] = st.checkbox('Valor Total do ICMS (ID W14)', value=perfil_completo)
-            selected_fields['Valor Total do IPI'] = st.checkbox('Valor Total do IPI (ID W16)', value=perfil_completo)
+        selected_fields = render_field_filters()
     
     with col2:
         st.subheader("Upload de Arquivos")
@@ -554,7 +542,6 @@ with tab1:
         if not st.session_state.df_processado.empty:
             st.subheader("📊 Dados Extraídos")
             
-            # Mostra informações sobre a granularidade
             col_info1, col_info2 = st.columns(2)
             with col_info1:
                 st.metric("📋 Total de Linhas (Itens)", len(st.session_state.df_processado))
@@ -570,9 +557,7 @@ with tab1:
             col_d1, col_d2 = st.columns(2)
             
             with col_d1:
-                # CSV
                 csv = st.session_state.df_processado.to_csv(index=False, encoding='utf-8-sig')
-                
                 st.download_button(
                     label="📥 Baixar CSV",
                     data=csv,
@@ -582,7 +567,6 @@ with tab1:
                 )
             
             with col_d2:
-                # Excel
                 buffer = BytesIO()
                 with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
                     st.session_state.df_processado.to_excel(writer, index=False, sheet_name='NF-e')
@@ -595,242 +579,251 @@ with tab1:
                     help="Baixar dados em formato Excel"
                 )
 
-# ==================== ABA 2: DASHBOARD ====================
-with tab2:
+
+def render_dashboard_tab():
+    """Renderiza aba de dashboard com análises."""
     st.header("Dashboard de Análise de NF-e")
     
     if st.session_state.df_processado.empty:
         st.info("ℹ️ Nenhum dado disponível. Por favor, processe arquivos na aba 'Conversor XML → XLSX' primeiro.")
-    else:
-        df_dashboard = st.session_state.df_processado.copy()
-        
-        # Seção de filtros inteligentes
-        st.subheader("🔎 Filtros Inteligentes")
-        
-        # Cria os filtros baseados nos campos disponíveis
-        filtros_disponiveis = []
-        
-        # Detecta quais campos estão disponíveis
-        if 'CNPJ do Emitente' in df_dashboard.columns:
-            filtros_disponiveis.append('CNPJ do Emitente')
-        if 'Razão Social Emitente' in df_dashboard.columns:
-            filtros_disponiveis.append('Razão Social Emitente')
-        if 'CNPJ do Destinatário' in df_dashboard.columns:
-            filtros_disponiveis.append('CNPJ do Destinatário')
-        if 'Razão Social Destinatário' in df_dashboard.columns:
-            filtros_disponiveis.append('Razão Social Destinatário')
-        if 'Natureza da Operação' in df_dashboard.columns:
-            filtros_disponiveis.append('Natureza da Operação')
-        if 'CFOP do Item' in df_dashboard.columns:
-            filtros_disponiveis.append('CFOP do Item')
-        if 'Descrição do Produto' in df_dashboard.columns:
-            filtros_disponiveis.append('Descrição do Produto')
-        
-        if filtros_disponiveis:
-            with st.expander("⚙️ **Configurar Filtros**", expanded=True):
-                st.info("💡 **Dica**: Os filtros se adaptam automaticamente aos campos que você processou. Selecione os valores para refinar sua análise.")
-                
-                # Organiza em 2 colunas
-                col_f1, col_f2 = st.columns(2)
-                
-                # Coluna 1
-                with col_f1:
-                    # Filtro CNPJ do Emitente
-                    if 'CNPJ do Emitente' in df_dashboard.columns:
-                        emitentes = sorted(df_dashboard['CNPJ do Emitente'].dropna().unique().tolist())
-                        if len(emitentes) > 0:
-                            st.markdown("**📤 CNPJ do Emitente**")
-                            selected_emitentes = st.multiselect(
-                                "Selecione:",
-                                options=emitentes,
-                                default=emitentes,
-                                key="filter_emit",
-                                label_visibility="collapsed"
-                            )
-                            if selected_emitentes:
-                                df_dashboard = df_dashboard[df_dashboard['CNPJ do Emitente'].isin(selected_emitentes)]
-                    
-                    # Filtro Razão Social Emitente (se não houver CNPJ)
-                    elif 'Razão Social Emitente' in df_dashboard.columns:
-                        emit_razao = sorted(df_dashboard['Razão Social Emitente'].dropna().unique().tolist())
-                        if len(emit_razao) > 0:
-                            st.markdown("**📤 Razão Social Emitente**")
-                            selected_emit_razao = st.multiselect(
-                                "Selecione:",
-                                options=emit_razao,
-                                default=emit_razao,
-                                key="filter_emit_razao",
-                                label_visibility="collapsed"
-                            )
-                            if selected_emit_razao:
-                                df_dashboard = df_dashboard[df_dashboard['Razão Social Emitente'].isin(selected_emit_razao)]
-                    
-                    # Filtro Natureza da Operação
-                    if 'Natureza da Operação' in df_dashboard.columns:
-                        naturezas = sorted(df_dashboard['Natureza da Operação'].dropna().unique().tolist())
-                        if len(naturezas) > 0:
-                            st.markdown("**📋 Natureza da Operação**")
-                            selected_naturezas = st.multiselect(
-                                "Selecione:",
-                                options=naturezas,
-                                default=naturezas,
-                                key="filter_nat",
-                                label_visibility="collapsed"
-                            )
-                            if selected_naturezas:
-                                df_dashboard = df_dashboard[df_dashboard['Natureza da Operação'].isin(selected_naturezas)]
-                    
-                    # Filtro Descrição do Produto
-                    if 'Descrição do Produto' in df_dashboard.columns:
-                        produtos = sorted(df_dashboard['Descrição do Produto'].dropna().unique().tolist())
-                        if len(produtos) > 0 and len(produtos) <= 50:  # Só mostra se não tiver muitos produtos
-                            st.markdown("**📦 Produto**")
-                            selected_produtos = st.multiselect(
-                                "Selecione:",
-                                options=produtos,
-                                default=produtos,
-                                key="filter_prod",
-                                label_visibility="collapsed"
-                            )
-                            if selected_produtos:
-                                df_dashboard = df_dashboard[df_dashboard['Descrição do Produto'].isin(selected_produtos)]
-                
-                # Coluna 2
-                with col_f2:
-                    # Filtro CNPJ do Destinatário
-                    if 'CNPJ do Destinatário' in df_dashboard.columns:
-                        destinatarios = sorted(df_dashboard['CNPJ do Destinatário'].dropna().unique().tolist())
-                        if len(destinatarios) > 0:
-                            st.markdown("**📥 CNPJ do Destinatário**")
-                            selected_destinatarios = st.multiselect(
-                                "Selecione:",
-                                options=destinatarios,
-                                default=destinatarios,
-                                key="filter_dest",
-                                label_visibility="collapsed"
-                            )
-                            if selected_destinatarios:
-                                df_dashboard = df_dashboard[df_dashboard['CNPJ do Destinatário'].isin(selected_destinatarios)]
-                    
-                    # Filtro Razão Social Destinatário (se não houver CNPJ)
-                    elif 'Razão Social Destinatário' in df_dashboard.columns:
-                        dest_razao = sorted(df_dashboard['Razão Social Destinatário'].dropna().unique().tolist())
-                        if len(dest_razao) > 0:
-                            st.markdown("**📥 Razão Social Destinatário**")
-                            selected_dest_razao = st.multiselect(
-                                "Selecione:",
-                                options=dest_razao,
-                                default=dest_razao,
-                                key="filter_dest_razao",
-                                label_visibility="collapsed"
-                            )
-                            if selected_dest_razao:
-                                df_dashboard = df_dashboard[df_dashboard['Razão Social Destinatário'].isin(selected_dest_razao)]
-                    
-                    # Filtro CFOP
-                    if 'CFOP do Item' in df_dashboard.columns:
-                        cfops = sorted(df_dashboard['CFOP do Item'].dropna().unique().tolist())
-                        if len(cfops) > 0:
-                            st.markdown("**🔢 CFOP**")
-                            selected_cfops = st.multiselect(
-                                "Selecione:",
-                                options=cfops,
-                                default=cfops,
-                                key="filter_cfop",
-                                label_visibility="collapsed"
-                            )
-                            if selected_cfops:
-                                df_dashboard = df_dashboard[df_dashboard['CFOP do Item'].isin(selected_cfops)]
-        else:
-            st.warning("⚠️ Nenhum campo de filtro disponível. Processe os dados na aba 'Conversor' incluindo campos como 'Natureza da Operação', 'CNPJ do Emitente', etc.")
-        
-        st.markdown("---")
-        
-        # Verifica se ainda há dados após filtros
-        if df_dashboard.empty:
-            st.warning("⚠️ Nenhum dado disponível com os filtros selecionados. Ajuste os filtros acima.")
-        else:
-            st.subheader("📊 Indicadores Principais")
-            kpis = dashboard_logic.calculate_kpis(df_dashboard)
-            
-            col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
-            
-            with col_kpi1:
-                st.metric(
-                    label="💰 Valor Total Faturado",
-                    value=f"R$ {kpis['total_faturado']:,.2f}",
-                    help="Soma do valor total de todas as NF-e processadas (sem duplicação)"
-                )
-            
-            with col_kpi2:
-                st.metric(
-                    label="📄 Total de NF-e",
-                    value=f"{kpis['total_nfe']:,}",
-                    help="Número de notas fiscais únicas processadas"
-                )
-            
-            with col_kpi3:
-                st.metric(
-                    label="📦 Média de Itens/NF",
-                    value=f"{kpis['media_itens']:.1f}",
-                    help="Média de itens por nota fiscal"
-                )
-            
-            st.markdown("---")
-            
-            st.subheader("📈 Visualizações")
-            
-            # Gráfico de tendência (largura completa)
-            st.plotly_chart(
-                dashboard_logic.create_faturamento_trend(df_dashboard),
-                use_container_width=True
-            )
-            
-            # Dois gráficos lado a lado
-            col_g1, col_g2 = st.columns(2)
-            
-            with col_g1:
-                st.plotly_chart(
-                    dashboard_logic.create_top_products_chart(df_dashboard),
-                    use_container_width=True
-                )
-            
-            with col_g2:
-                st.plotly_chart(
-                    dashboard_logic.create_natureza_pie_chart(df_dashboard),
-                    use_container_width=True
-                )
+        return
+    
+    df_dashboard = st.session_state.df_processado.copy()
+    
+    # Filtros inteligentes
+    st.subheader("🔎 Filtros Inteligentes")
+    df_dashboard = render_dashboard_filters(df_dashboard)
+    
+    st.markdown("---")
+    
+    if df_dashboard.empty:
+        st.warning("⚠️ Nenhum dado disponível com os filtros selecionados. Ajuste os filtros acima.")
+        return
+    
+    # KPIs
+    st.subheader("📊 Indicadores Principais")
+    render_kpis(df_dashboard)
+    
+    st.markdown("---")
+    
+    # Gráficos
+    st.subheader("📈 Visualizações")
+    render_charts(df_dashboard)
 
-# Rodapé
-st.markdown("---")
-st.markdown(
-    """
-    <div style='text-align: center; padding: 20px;'>
-        <p style='color: #666; margin-bottom: 15px; font-size: 16px;'>
-            <strong>Sistema de Conversão e Dashboard de NF-e</strong><br>
-            <span style='font-size: 12px;'>Conforme Leiaute Oficial NT 2025.001 v.1.02</span>
-        </p>
-        <div style='display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;'>
-            <a href="https://trrcontabil.com" target="_blank" 
-               style='color: #1f77b4; text-decoration: none; font-size: 14px;'>
-                🌐 trrcontabil.com
-            </a>
-            <a href="https://www.instagram.com/trr_contabilidade/" target="_blank" 
-               style='color: #E4405F; text-decoration: none; font-size: 14px;'>
-                📷 @trr_contabilidade
-            </a>
-            <a href="https://wa.me/5591992412788" target="_blank" 
-               style='color: #25D366; text-decoration: none; font-size: 14px;'>
-                📞 (91) 99241-2788
-            </a>
+
+def render_dashboard_filters(df):
+    """Renderiza filtros do dashboard e retorna DataFrame filtrado."""
+    filtros_disponiveis = [
+        col for col in ['CNPJ do Emitente', 'Razão Social Emitente', 'CNPJ do Destinatário',
+                       'Razão Social Destinatário', 'Natureza da Operação', 'CFOP do Item',
+                       'Descrição do Produto']
+        if col in df.columns
+    ]
+    
+    if not filtros_disponiveis:
+        st.warning("⚠️ Nenhum campo de filtro disponível.")
+        return df
+    
+    with st.expander("⚙️ **Configurar Filtros**", expanded=True):
+        st.info("💡 **Dica**: Os filtros se adaptam automaticamente aos campos que você processou.")
+        
+        col_f1, col_f2 = st.columns(2)
+        
+        with col_f1:
+            # Filtro Emitente
+            if 'CNPJ do Emitente' in df.columns:
+                emitentes = sorted(df['CNPJ do Emitente'].dropna().unique().tolist())
+                if emitentes:
+                    st.markdown("**📤 CNPJ do Emitente**")
+                    selected_emitentes = st.multiselect(
+                        "Selecione:", options=emitentes, default=emitentes,
+                        key="filter_emit", label_visibility="collapsed"
+                    )
+                    if selected_emitentes:
+                        df = df[df['CNPJ do Emitente'].isin(selected_emitentes)]
+            
+            elif 'Razão Social Emitente' in df.columns:
+                emit_razao = sorted(df['Razão Social Emitente'].dropna().unique().tolist())
+                if emit_razao:
+                    st.markdown("**📤 Razão Social Emitente**")
+                    selected_emit_razao = st.multiselect(
+                        "Selecione:", options=emit_razao, default=emit_razao,
+                        key="filter_emit_razao", label_visibility="collapsed"
+                    )
+                    if selected_emit_razao:
+                        df = df[df['Razão Social Emitente'].isin(selected_emit_razao)]
+            
+            # Filtro Natureza da Operação
+            if 'Natureza da Operação' in df.columns:
+                naturezas = sorted(df['Natureza da Operação'].dropna().unique().tolist())
+                if naturezas:
+                    st.markdown("**📋 Natureza da Operação**")
+                    selected_naturezas = st.multiselect(
+                        "Selecione:", options=naturezas, default=naturezas,
+                        key="filter_nat", label_visibility="collapsed"
+                    )
+                    if selected_naturezas:
+                        df = df[df['Natureza da Operação'].isin(selected_naturezas)]
+        
+        with col_f2:
+            # Filtro Destinatário
+            if 'CNPJ do Destinatário' in df.columns:
+                destinatarios = sorted(df['CNPJ do Destinatário'].dropna().unique().tolist())
+                if destinatarios:
+                    st.markdown("**📥 CNPJ do Destinatário**")
+                    selected_destinatarios = st.multiselect(
+                        "Selecione:", options=destinatarios, default=destinatarios,
+                        key="filter_dest", label_visibility="collapsed"
+                    )
+                    if selected_destinatarios:
+                        df = df[df['CNPJ do Destinatário'].isin(selected_destinatarios)]
+            
+            elif 'Razão Social Destinatário' in df.columns:
+                dest_razao = sorted(df['Razão Social Destinatário'].dropna().unique().tolist())
+                if dest_razao:
+                    st.markdown("**📥 Razão Social Destinatário**")
+                    selected_dest_razao = st.multiselect(
+                        "Selecione:", options=dest_razao, default=dest_razao,
+                        key="filter_dest_razao", label_visibility="collapsed"
+                    )
+                    if selected_dest_razao:
+                        df = df[df['Razão Social Destinatário'].isin(selected_dest_razao)]
+            
+            # Filtro CFOP
+            if 'CFOP do Item' in df.columns:
+                cfops = sorted(df['CFOP do Item'].dropna().unique().tolist())
+                if cfops:
+                    st.markdown("**🔢 CFOP**")
+                    selected_cfops = st.multiselect(
+                        "Selecione:", options=cfops, default=cfops,
+                        key="filter_cfop", label_visibility="collapsed"
+                    )
+                    if selected_cfops:
+                        df = df[df['CFOP do Item'].isin(selected_cfops)]
+    
+    return df
+
+
+def render_kpis(df):
+    """Renderiza indicadores principais (KPIs)."""
+    kpis = dashboard_logic.calculate_kpis(df)
+    
+    col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
+    
+    with col_kpi1:
+        st.metric(
+            label="💰 Valor Total Faturado",
+            value=f"R$ {kpis['total_faturado']:,.2f}",
+            help="Soma do valor total de todas as NF-e processadas (sem duplicação)"
+        )
+    
+    with col_kpi2:
+        st.metric(
+            label="📄 Total de NF-e",
+            value=f"{kpis['total_nfe']:,}",
+            help="Número de notas fiscais únicas processadas"
+        )
+    
+    with col_kpi3:
+        st.metric(
+            label="📦 Média de Itens/NF",
+            value=f"{kpis['media_itens']:.1f}",
+            help="Média de itens por nota fiscal"
+        )
+
+
+def render_charts(df):
+    """Renderiza gráficos de análise."""
+    # Gráfico de tendência (largura completa)
+    st.plotly_chart(
+        dashboard_logic.create_faturamento_trend(df),
+        use_container_width=True
+    )
+    
+    # Dois gráficos lado a lado
+    col_g1, col_g2 = st.columns(2)
+    
+    with col_g1:
+        st.plotly_chart(
+            dashboard_logic.create_top_products_chart(df),
+            use_container_width=True
+        )
+    
+    with col_g2:
+        st.plotly_chart(
+            dashboard_logic.create_natureza_pie_chart(df),
+            use_container_width=True
+        )
+
+
+def render_footer():
+    """Renderiza rodapé da aplicação."""
+    st.markdown("---")
+    st.markdown(
+        """
+        <div style='text-align: center; padding: 20px;'>
+            <p style='color: #666; margin-bottom: 15px; font-size: 16px;'>
+                <strong>Sistema de Conversão e Dashboard de NF-e</strong><br>
+                <span style='font-size: 12px;'>Conforme Leiaute Oficial NT 2025.001 v.1.02</span>
+            </p>
+            <div style='display: flex; justify-content: center; align-items: center; gap: 30px; flex-wrap: wrap;'>
+                <a href="https://trrcontabil.com" target="_blank" 
+                   style='color: #1f77b4; text-decoration: none; font-size: 14px;'>
+                    🌐 trrcontabil.com
+                </a>
+                <a href="https://www.instagram.com/trr_contabilidade/" target="_blank" 
+                   style='color: #E4405F; text-decoration: none; font-size: 14px;'>
+                    📷 @trr_contabilidade
+                </a>
+                <a href="https://wa.me/5591992412788" target="_blank" 
+                   style='color: #25D366; text-decoration: none; font-size: 14px;'>
+                    📞 (91) 99241-2788
+                </a>
+            </div>
+            <p style='color: #999; margin-top: 15px; font-size: 12px;'>
+                Desenvolvido com Streamlit ❤️ | Referência: 
+                <a href="http://moc.sped.fazenda.pr.gov.br/Leiaute.html" target="_blank" style='color: #999;'>
+                    Leiaute Oficial
+                </a>
+            </p>
         </div>
-        <p style='color: #999; margin-top: 15px; font-size: 12px;'>
-            Desenvolvido com Streamlit ❤️ | Referência: 
-            <a href="http://moc.sped.fazenda.pr.gov.br/Leiaute.html" target="_blank" style='color: #999;'>
-                Leiaute Oficial
-            </a>
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+        """,
+        unsafe_allow_html=True
+    )
+
+
+# ============================================
+# FUNÇÃO PRINCIPAL
+# ============================================
+def main():
+    """Função principal da aplicação."""
+    # Configuração inicial
+    setup_page()
+    apply_custom_theme()
+    
+    # Inicializa session_state
+    if 'df_processado' not in st.session_state:
+        st.session_state.df_processado = pd.DataFrame()
+    
+    # Cabeçalho
+    render_logo()
+    st.markdown("---")
+    
+    # Abas principais
+    tab1, tab2 = st.tabs(["🔄 Conversor XML → XLSX", "📈 Dashboard"])
+    
+    with tab1:
+        render_converter_tab()
+    
+    with tab2:
+        render_dashboard_tab()
+    
+    # Rodapé
+    render_footer()
+
+
+# ============================================
+# PONTO DE ENTRADA
+# ============================================
+if __name__ == "__main__":
+    main()
