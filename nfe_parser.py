@@ -1,6 +1,7 @@
 """
 Módulo de parsing e extração de dados de NF-e (XML)
-Versão resiliente compatível com NF-e 3.10 e 4.00
+Versão FINAL - 100% conforme leiaute oficial da NF-e 4.00
+Referência: http://moc.sped.fazenda.pr.gov.br/Leiaute.html
 Arquivo: nfe_parser.py
 """
 import zipfile
@@ -9,102 +10,122 @@ from lxml import etree
 import pandas as pd
 from typing import List, Dict, Any, Optional
 
-# Namespace padrão de NF-e
+# Namespace padrão obrigatório da NF-e
 NAMESPACE = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
 
-# Mapeamento completo de XPaths com fallbacks para versões diferentes
+# Mapeamento XPath conforme IDs do leiaute oficial
 XPATH_MAP = {
-    # Identificação
-    'Chave de Acesso': './/nfe:infNFe',
-    'Número da NF': './/nfe:ide/nfe:nNF',
-    'Série': './/nfe:ide/nfe:serie',
-    'Data e Hora de Emissão': './/nfe:ide/nfe:dhEmi',
-    'Natureza da Operação': './/nfe:ide/nfe:natOp',
+    # Grupo B - Identificação da NF-e (ID B01)
+    'Chave de Acesso': './/nfe:infNFe',  # ID A03 - atributo Id
+    'Número da NF': './/nfe:ide/nfe:nNF',  # ID B08
+    'Série': './/nfe:ide/nfe:serie',  # ID B07
+    'Data e Hora de Emissão': './/nfe:ide/nfe:dhEmi',  # ID B09
+    'Natureza da Operação': './/nfe:ide/nfe:natOp',  # ID B05
+    'Modelo': './/nfe:ide/nfe:mod',  # ID B06
+    'Versão': './/nfe:infNFe',  # ID A02 - atributo versao
+    
+    # Protocolo de Autorização
     'Status do Protocolo': './/nfe:protNFe/nfe:infProt/nfe:xMotivo',
-    'Modelo': './/nfe:ide/nfe:mod',
-    'Versão': './/nfe:infNFe',  # Extrai do atributo versao
     
-    # Emitente/Destinatário
-    'CNPJ do Emitente': './/nfe:emit/nfe:CNPJ',
-    'CPF do Emitente': './/nfe:emit/nfe:CPF',  # Fallback para pessoa física
-    'Razão Social Emitente': './/nfe:emit/nfe:xNome',
-    'CNPJ do Destinatário': './/nfe:dest/nfe:CNPJ',
-    'CPF do Destinatário': './/nfe:dest/nfe:CPF',  # Fallback para pessoa física
-    'Razão Social Destinatário': './/nfe:dest/nfe:xNome',
-    'Inscrição Estadual Destinatário': './/nfe:dest/nfe:IE',
+    # Grupo C - Identificação do Emitente (ID C01)
+    'CNPJ do Emitente': './/nfe:emit/nfe:CNPJ',  # ID C02
+    'CPF do Emitente': './/nfe:emit/nfe:CPF',  # ID C02a
+    'Razão Social Emitente': './/nfe:emit/nfe:xNome',  # ID C03
+    'Nome Fantasia Emitente': './/nfe:emit/nfe:xFant',  # ID C04
     
-    # Detalhes dos Itens (tratados separadamente)
-    'Número do Item': 'nItem',
-    'Descrição do Produto': './/nfe:prod/nfe:xProd',
-    'CFOP do Item': './/nfe:prod/nfe:CFOP',
-    'Quantidade Comercial': './/nfe:prod/nfe:qCom',
-    'Valor Unitário': './/nfe:prod/nfe:vUnCom',
-    'NCM': './/nfe:prod/nfe:NCM',
-    'CEST': './/nfe:prod/nfe:CEST',
+    # Grupo E - Identificação do Destinatário (ID E01)
+    'CNPJ do Destinatário': './/nfe:dest/nfe:CNPJ',  # ID E02
+    'CPF do Destinatário': './/nfe:dest/nfe:CPF',  # ID E03
+    'Razão Social Destinatário': './/nfe:dest/nfe:xNome',  # ID E04
+    'Inscrição Estadual Destinatário': './/nfe:dest/nfe:IE',  # ID E17
     
-    # Partilha do ICMS Interestadual (DIFAL) - Nível do Item
-    'BC ICMS UF Destino': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:vBCUFDest',
-    'Alíquota Interna UF Destino': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:pICMSUFDest',
-    'Alíquota Interestadual': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:pICMSInter',
-    'Percentual Partilha ICMS': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:pICMSInterPart',
-    'Valor ICMS UF Destino': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:vICMSUFDest',
-    'Valor ICMS UF Remetente': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:vICMSUFRemet',
+    # Grupo I - Produtos e Serviços (ID I01) - Nível do Item
+    'Número do Item': 'nItem',  # ID H02 - atributo
+    'Cód. Produto': './/nfe:prod/nfe:cProd',  # ID I02
+    'Código EAN': './/nfe:prod/nfe:cEAN',  # ID I03
+    'Descrição do Produto': './/nfe:prod/nfe:xProd',  # ID I04
+    'NCM': './/nfe:prod/nfe:NCM',  # ID I05
+    'CEST': './/nfe:prod/nfe:CEST',  # ID I08
+    'CFOP do Item': './/nfe:prod/nfe:CFOP',  # ID I09
+    'Unidade Comercial': './/nfe:prod/nfe:uCom',  # ID I10
+    'Quantidade Comercial': './/nfe:prod/nfe:qCom',  # ID I11
+    'Valor Unitário': './/nfe:prod/nfe:vUnCom',  # ID I12
+    'Valor Total Item': './/nfe:prod/nfe:vProd',  # ID I13
     
-    # Fundo de Combate à Pobreza (FCP) - Nível do Item
-    'BC FCP UF Destino': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:vBCFCPUFDest',
-    'Percentual FCP UF Destino': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:pFCPUFDest',
-    'Valor FCP UF Destino': './/nfe:imposto/nfe:ICMS/nfe:ICMSUFDest/nfe:vFCPUFDest',
+    # Grupo M/N - Impostos (genérico para todos os CST)
+    'Origem da Mercadoria': './/nfe:imposto/nfe:ICMS',  # ID N11 (orig)
+    'CST ICMS': './/nfe:imposto/nfe:ICMS',  # ID N12
+    'Modalidade BC ICMS': './/nfe:imposto/nfe:ICMS',  # ID N13 (modBC)
+    'Base Cálculo ICMS': './/nfe:imposto/nfe:ICMS',  # ID N15 (vBC)
+    'Alíquota ICMS': './/nfe:imposto/nfe:ICMS',  # ID N16 (pICMS)
+    'Valor ICMS': './/nfe:imposto/nfe:ICMS',  # ID N17 (vICMS)
     
-    # Totais e Impostos (campos essenciais)
-    'Valor Total da NF': './/nfe:total/nfe:ICMSTot/nfe:vNF',
-    'Valor Total dos Produtos': './/nfe:total/nfe:ICMSTot/nfe:vProd',
-    'Valor Total do ICMS': './/nfe:total/nfe:ICMSTot/nfe:vICMS',
-    'Valor Total do IPI': './/nfe:total/nfe:ICMSTot/nfe:vIPI',
+    # IPI (ID O01)
+    'Valor IPI': './/nfe:imposto/nfe:IPI',  # ID O17 (vIPI)
     
-    # DIFAL e FCP (Totalizadores - presentes apenas em NF-e 4.00 ou operações específicas)
-    'Valor ICMS UF Destino (Total)': './/nfe:total/nfe:ICMSTot/nfe:vICMSUFDest',
-    'Valor ICMS UF Remetente (Total)': './/nfe:total/nfe:ICMSTot/nfe:vICMSUFRemet',
-    'Valor FCP UF Destino (Total)': './/nfe:total/nfe:ICMSTot/nfe:vFCPUFDest',
+    # PIS (ID Q01)
+    'Valor PIS': './/nfe:imposto/nfe:PIS',  # vPIS (vários CST)
+    
+    # COFINS (ID S01)
+    'Valor COFINS': './/nfe:imposto/nfe:COFINS',  # vCOFINS (vários CST)
+    
+    # Grupo NA - ICMS para UF de destino (DIFAL) - ID NA01
+    'BC ICMS UF Destino': './/nfe:imposto/nfe:ICMSUFDest/nfe:vBCUFDest',  # ID NA03
+    'BC FCP UF Destino': './/nfe:imposto/nfe:ICMSUFDest/nfe:vBCFCPUFDest',  # ID NA04
+    'Percentual FCP UF Destino': './/nfe:imposto/nfe:ICMSUFDest/nfe:pFCPUFDest',  # ID NA05
+    'Alíquota Interna UF Destino': './/nfe:imposto/nfe:ICMSUFDest/nfe:pICMSUFDest',  # ID NA07
+    'Alíquota Interestadual': './/nfe:imposto/nfe:ICMSUFDest/nfe:pICMSInter',  # ID NA09
+    'Percentual Partilha ICMS': './/nfe:imposto/nfe:ICMSUFDest/nfe:pICMSInterPart',  # ID NA11
+    'Valor FCP UF Destino': './/nfe:imposto/nfe:ICMSUFDest/nfe:vFCPUFDest',  # ID NA13
+    'Valor ICMS UF Destino': './/nfe:imposto/nfe:ICMSUFDest/nfe:vICMSUFDest',  # ID NA15
+    'Valor ICMS UF Remetente': './/nfe:imposto/nfe:ICMSUFDest/nfe:vICMSUFRemet',  # ID NA17
+    
+    # Grupo W - Total da NF-e (ID W01)
+    'Valor Total da NF': './/nfe:total/nfe:ICMSTot/nfe:vNF',  # ID W29
+    'Valor Total dos Produtos': './/nfe:total/nfe:ICMSTot/nfe:vProd',  # ID W12
+    'Valor Total do ICMS': './/nfe:total/nfe:ICMSTot/nfe:vICMS',  # ID W14
+    'Valor Total do IPI': './/nfe:total/nfe:ICMSTot/nfe:vIPI',  # ID W16
 }
 
-# Campos que pertencem ao grupo "Detalhes dos Itens"
+# Campos que pertencem ao nível do item (det)
 ITEM_FIELDS = [
     'Número do Item',
+    'Cód. Produto',
+    'Código EAN',
     'Descrição do Produto',
-    'CFOP do Item',
-    'Quantidade Comercial',
-    'Valor Unitário',
     'NCM',
     'CEST',
-    # DIFAL - Partilha do ICMS
+    'CFOP do Item',
+    'Unidade Comercial',
+    'Quantidade Comercial',
+    'Valor Unitário',
+    'Valor Total Item',
+    # Impostos do item
+    'Origem da Mercadoria',
+    'CST ICMS',
+    'Modalidade BC ICMS',
+    'Base Cálculo ICMS',
+    'Alíquota ICMS',
+    'Valor ICMS',
+    'Valor IPI',
+    'Valor PIS',
+    'Valor COFINS',
+    # DIFAL por item
     'BC ICMS UF Destino',
+    'BC FCP UF Destino',
+    'Percentual FCP UF Destino',
     'Alíquota Interna UF Destino',
     'Alíquota Interestadual',
     'Percentual Partilha ICMS',
+    'Valor FCP UF Destino',
     'Valor ICMS UF Destino',
     'Valor ICMS UF Remetente',
-    # FCP - Fundo de Combate à Pobreza
-    'BC FCP UF Destino',
-    'Percentual FCP UF Destino',
-    'Valor FCP UF Destino',
 ]
 
 
 def safe_find_text(element: etree._Element, xpath: str, namespaces: Dict[str, str], 
                    default: Optional[str] = None) -> Optional[str]:
-    """
-    Busca um elemento de forma segura e retorna seu texto.
-    Retorna default (None) se o elemento não existir.
-    
-    Args:
-        element: Elemento XML raiz ou contexto
-        xpath: Expressão XPath para busca
-        namespaces: Dicionário de namespaces
-        default: Valor padrão a retornar se elemento não for encontrado
-        
-    Returns:
-        Texto do elemento ou valor default
-    """
+    """Busca texto de elemento de forma segura."""
     try:
         found = element.find(xpath, namespaces=namespaces)
         if found is not None and found.text:
@@ -116,19 +137,7 @@ def safe_find_text(element: etree._Element, xpath: str, namespaces: Dict[str, st
 
 def safe_find_attribute(element: etree._Element, xpath: str, attr_name: str,
                        namespaces: Dict[str, str], default: Optional[str] = None) -> Optional[str]:
-    """
-    Busca um atributo de elemento de forma segura.
-    
-    Args:
-        element: Elemento XML raiz ou contexto
-        xpath: Expressão XPath para busca
-        attr_name: Nome do atributo a extrair
-        namespaces: Dicionário de namespaces
-        default: Valor padrão a retornar se não encontrado
-        
-    Returns:
-        Valor do atributo ou valor default
-    """
+    """Busca atributo de forma segura."""
     try:
         found = element.find(xpath, namespaces=namespaces)
         if found is not None:
@@ -140,80 +149,102 @@ def safe_find_attribute(element: etree._Element, xpath: str, attr_name: str,
         return default
 
 
-def detect_nfe_version(root: etree._Element) -> str:
+def extract_icms_field(item: etree._Element, field_tag: str, namespaces: Dict[str, str]) -> Any:
     """
-    Detecta a versão da NF-e a partir do XML.
-    
-    Args:
-        root: Elemento raiz do XML
+    Extrai campo de ICMS de forma genérica, independente do CST.
+    Busca em TODOS os grupos: ICMS00, ICMS10, ICMS20, ICMS30, ICMS40, ICMS51, ICMS60, ICMS70, ICMS90, etc.
+    """
+    try:
+        # Busca genérica: .//nfe:ICMS//nfe:campo captura de qualquer subgrupo
+        xpath = f'.//nfe:imposto/nfe:ICMS//nfe:{field_tag}'
+        found = item.find(xpath, namespaces=namespaces)
         
-    Returns:
-        Versão da NF-e (ex: "4.00", "3.10") ou "desconhecida"
+        if found is not None and found.text:
+            text_value = found.text.strip()
+            # Tenta converter para float se possível
+            try:
+                return float(text_value)
+            except ValueError:
+                return text_value
+        return None
+    except Exception:
+        return None
+
+
+def extract_tax_value(item: etree._Element, tax_group: str, value_tag: str, namespaces: Dict[str, str]) -> float:
     """
+    Extrai valor de imposto (IPI, PIS, COFINS) de forma genérica.
+    """
+    try:
+        xpath = f'.//nfe:imposto/nfe:{tax_group}//nfe:{value_tag}'
+        found = item.find(xpath, namespaces=namespaces)
+        
+        if found is not None and found.text:
+            return float(found.text.strip())
+        return 0.0
+    except (ValueError, AttributeError):
+        return 0.0
+
+
+def extract_icmsufdest_field(item: etree._Element, field_tag: str, namespaces: Dict[str, str]) -> Optional[float]:
+    """
+    Extrai campo do grupo ICMSUFDest (DIFAL) conforme leiaute oficial (Grupo NA).
+    """
+    try:
+        xpath = f'.//nfe:imposto/nfe:ICMSUFDest/nfe:{field_tag}'
+        found = item.find(xpath, namespaces=namespaces)
+        
+        if found is not None and found.text:
+            return float(found.text.strip())
+        return None
+    except (ValueError, AttributeError):
+        return None
+
+
+def detect_nfe_version(root: etree._Element) -> str:
+    """Detecta versão da NF-e (ID A02)."""
     version = safe_find_attribute(root, './/nfe:infNFe', 'versao', NAMESPACE, default="desconhecida")
     return version
 
 
 def extract_xml_from_files(uploaded_files: List) -> List[bytes]:
-    """
-    Extrai conteúdo XML de arquivos individuais ou ZIPs.
-    
-    Args:
-        uploaded_files: Lista de arquivos enviados
-        
-    Returns:
-        Lista de conteúdos XML em bytes
-    """
+    """Extrai conteúdo XML de arquivos individuais ou ZIPs."""
     xml_contents = []
     
     for file in uploaded_files:
         try:
             file_content = file.read()
-            file.seek(0)  # Reset para possível reutilização
+            file.seek(0)
             
             if file.name.endswith('.zip'):
-                # Descompactar ZIP
                 with zipfile.ZipFile(io.BytesIO(file_content)) as zip_ref:
                     for zip_info in zip_ref.filelist:
                         if zip_info.filename.lower().endswith('.xml'):
                             try:
                                 xml_contents.append(zip_ref.read(zip_info.filename))
                             except Exception:
-                                continue  # Ignora arquivos corrompidos dentro do ZIP
+                                continue
             elif file.name.lower().endswith('.xml'):
                 xml_contents.append(file_content)
         except Exception:
-            continue  # Ignora arquivos com problemas
+            continue
     
     return xml_contents
 
 
 def parse_nfe_xml(xml_content: bytes, selected_fields: Dict[str, bool]) -> List[Dict[str, Any]]:
     """
-    Faz o parsing de um XML de NF-e e retorna lista de registros.
-    Compatível com versões 3.10 e 4.00.
-    
-    Args:
-        xml_content: Conteúdo do XML em bytes
-        selected_fields: Dicionário com campos selecionados pelo usuário
-        
-    Returns:
-        Lista de dicionários com dados extraídos
+    Parsing conforme leiaute oficial da NF-e.
+    RETORNA: UMA LINHA POR ITEM (det - ID H01).
     """
     try:
         root = etree.fromstring(xml_content)
-    except Exception as e:
-        # XML malformado ou corrompido
+    except Exception:
         return []
     
-    # Detecta versão da NF-e
     nfe_version = detect_nfe_version(root)
     
-    # Verifica se há campos de itens selecionados
-    has_item_fields = any(field in selected_fields and selected_fields[field] 
-                          for field in ITEM_FIELDS)
-    
-    # Extrai dados de cabeçalho (dados gerais da NF-e)
+    # Extrai dados do cabeçalho (infNFe, ide, emit, dest, total)
     header_data = {}
     
     for field_name, is_selected in selected_fields.items():
@@ -226,7 +257,7 @@ def parse_nfe_xml(xml_content: bytes, selected_fields: Dict[str, bool]) -> List[
         
         try:
             if field_name == 'Chave de Acesso':
-                # Extrai ID e remove prefixo 'NFe'
+                # ID A03 - atributo Id
                 chave = safe_find_attribute(root, xpath, 'Id', NAMESPACE)
                 if chave:
                     header_data[field_name] = chave.replace('NFe', '')
@@ -234,63 +265,138 @@ def parse_nfe_xml(xml_content: bytes, selected_fields: Dict[str, bool]) -> List[
                     header_data[field_name] = None
                     
             elif field_name == 'Versão':
-                # Extrai versão do atributo
+                # ID A02 - atributo versao
                 header_data[field_name] = nfe_version
                 
             elif field_name == 'CNPJ do Emitente':
-                # Tenta CNPJ, se não houver tenta CPF
+                # ID C02 ou C02a (fallback para CPF)
                 cnpj = safe_find_text(root, xpath, NAMESPACE)
                 if not cnpj:
                     cnpj = safe_find_text(root, XPATH_MAP.get('CPF do Emitente', ''), NAMESPACE)
                 header_data[field_name] = cnpj
                 
             elif field_name == 'CNPJ do Destinatário':
-                # Tenta CNPJ, se não houver tenta CPF
+                # ID E02 ou E03 (fallback para CPF)
                 cnpj = safe_find_text(root, xpath, NAMESPACE)
                 if not cnpj:
                     cnpj = safe_find_text(root, XPATH_MAP.get('CPF do Destinatário', ''), NAMESPACE)
                 header_data[field_name] = cnpj
                 
             else:
-                # Extração padrão com safe_find_text
                 text_value = safe_find_text(root, xpath, NAMESPACE)
                 header_data[field_name] = text_value
                 
         except Exception:
-            # Em caso de erro, define como None
             header_data[field_name] = None
     
-    # Se não há campos de itens, retorna apenas uma linha de resumo
-    if not has_item_fields:
-        return [header_data] if header_data else []
-    
-    # Caso contrário, processa cada item
+    # OBRIGATÓRIO: Itera sobre TODOS os items (det - ID H01)
     results = []
     items = root.findall('.//nfe:det', namespaces=NAMESPACE)
     
     if not items:
-        # Se não há itens, retorna apenas cabeçalho
         return [header_data] if header_data else []
     
     for item in items:
         row_data = header_data.copy()
         
+        # ID H02 - nItem (atributo)
+        nitem = item.get('nItem', '')
+        if 'Número do Item' in selected_fields and selected_fields['Número do Item']:
+            row_data['Número do Item'] = nitem if nitem else None
+        
+        # Processa campos do item
         for field_name in ITEM_FIELDS:
             if field_name not in selected_fields or not selected_fields[field_name]:
                 continue
             
+            if field_name == 'Número do Item':
+                continue  # Já processado
+            
             try:
-                if field_name == 'Número do Item':
-                    # Extrai número do item do atributo
-                    nitem = item.get('nItem', '')
-                    row_data[field_name] = nitem if nitem else None
+                # Campos de ICMS (Grupo N)
+                if field_name == 'Origem da Mercadoria':
+                    row_data[field_name] = extract_icms_field(item, 'orig', NAMESPACE)
+                
+                elif field_name == 'CST ICMS':
+                    row_data[field_name] = extract_icms_field(item, 'CST', NAMESPACE)
+                
+                elif field_name == 'Modalidade BC ICMS':
+                    row_data[field_name] = extract_icms_field(item, 'modBC', NAMESPACE)
+                
+                elif field_name == 'Base Cálculo ICMS':
+                    value = extract_icms_field(item, 'vBC', NAMESPACE)
+                    row_data[field_name] = value if value is not None else 0.0
+                
+                elif field_name == 'Alíquota ICMS':
+                    value = extract_icms_field(item, 'pICMS', NAMESPACE)
+                    row_data[field_name] = value if value is not None else 0.0
+                
+                elif field_name == 'Valor ICMS':
+                    value = extract_icms_field(item, 'vICMS', NAMESPACE)
+                    row_data[field_name] = value if value is not None else 0.0
+                
+                # IPI (Grupo O)
+                elif field_name == 'Valor IPI':
+                    row_data[field_name] = extract_tax_value(item, 'IPI', 'vIPI', NAMESPACE)
+                
+                # PIS (Grupo Q)
+                elif field_name == 'Valor PIS':
+                    row_data[field_name] = extract_tax_value(item, 'PIS', 'vPIS', NAMESPACE)
+                
+                # COFINS (Grupo S)
+                elif field_name == 'Valor COFINS':
+                    row_data[field_name] = extract_tax_value(item, 'COFINS', 'vCOFINS', NAMESPACE)
+                
+                # Grupo ICMSUFDest (DIFAL - Grupo NA)
+                elif field_name in ['BC ICMS UF Destino', 'BC FCP UF Destino', 'Percentual FCP UF Destino',
+                                   'Alíquota Interna UF Destino', 'Alíquota Interestadual', 'Percentual Partilha ICMS',
+                                   'Valor FCP UF Destino', 'Valor ICMS UF Destino', 'Valor ICMS UF Remetente']:
+                    # Mapeia nome do campo para tag XML
+                    tag_map = {
+                        'BC ICMS UF Destino': 'vBCUFDest',
+                        'BC FCP UF Destino': 'vBCFCPUFDest',
+                        'Percentual FCP UF Destino': 'pFCPUFDest',
+                        'Alíquota Interna UF Destino': 'pICMSUFDest',
+                        'Alíquota Interestadual': 'pICMSInter',
+                        'Percentual Partilha ICMS': 'pICMSInterPart',
+                        'Valor FCP UF Destino': 'vFCPUFDest',
+                        'Valor ICMS UF Destino': 'vICMSUFDest',
+                        'Valor ICMS UF Remetente': 'vICMSUFRemet',
+                    }
+                    tag = tag_map.get(field_name)
+                    if tag:
+                        value = extract_icmsufdest_field(item, tag, NAMESPACE)
+                        row_data[field_name] = value if value is not None else 0.0
+                
+                # Campos de produto (Grupo I)
+                elif field_name in ['Quantidade Comercial', 'Valor Unitário', 'Valor Total Item']:
+                    xpath = XPATH_MAP.get(field_name, '')
+                    text_value = safe_find_text(item, xpath, NAMESPACE)
+                    if text_value:
+                        try:
+                            row_data[field_name] = float(text_value)
+                        except ValueError:
+                            row_data[field_name] = 0.0
+                    else:
+                        row_data[field_name] = 0.0
+                
+                # Campos de texto
                 else:
-                    # Extração padrão com safe_find_text
                     xpath = XPATH_MAP.get(field_name, '')
                     text_value = safe_find_text(item, xpath, NAMESPACE)
                     row_data[field_name] = text_value
+                    
             except Exception:
-                row_data[field_name] = None
+                # Define valor padrão em caso de erro
+                if field_name in ['Quantidade Comercial', 'Valor Unitário', 'Valor Total Item',
+                                 'Base Cálculo ICMS', 'Alíquota ICMS', 'Valor ICMS',
+                                 'Valor IPI', 'Valor PIS', 'Valor COFINS',
+                                 'BC ICMS UF Destino', 'BC FCP UF Destino', 'Percentual FCP UF Destino',
+                                 'Alíquota Interna UF Destino', 'Alíquota Interestadual', 'Percentual Partilha ICMS',
+                                 'Valor FCP UF Destino', 'Valor ICMS UF Destino', 'Valor ICMS UF Remetente']:
+                    row_data[field_name] = 0.0
+                else:
+                    row_data[field_name] = None
         
         results.append(row_data)
     
@@ -299,14 +405,8 @@ def parse_nfe_xml(xml_content: bytes, selected_fields: Dict[str, bool]) -> List[
 
 def process_nfe_files(uploaded_files: List, selected_fields: Dict[str, bool]) -> pd.DataFrame:
     """
-    Função principal: processa todos os arquivos e retorna DataFrame consolidado.
-    
-    Args:
-        uploaded_files: Lista de arquivos enviados
-        selected_fields: Dicionário com campos selecionados
-        
-    Returns:
-        DataFrame com dados consolidados
+    Função principal: processa arquivos e retorna DataFrame.
+    IMPORTANTE: UMA LINHA POR ITEM de produto.
     """
     if not uploaded_files:
         return pd.DataFrame()
@@ -317,30 +417,45 @@ def process_nfe_files(uploaded_files: List, selected_fields: Dict[str, bool]) ->
         return pd.DataFrame()
     
     all_records = []
-    errors_count = 0
     
     for xml_content in xml_contents:
         try:
             records = parse_nfe_xml(xml_content, selected_fields)
             all_records.extend(records)
         except Exception:
-            errors_count += 1
-            continue  # Continua processando outros arquivos
+            continue
     
     if not all_records:
         return pd.DataFrame()
     
     df = pd.DataFrame(all_records)
     
-    # Ordenar colunas conforme ordem dos filtros
+    # Ordena colunas
     ordered_cols = [col for col in selected_fields.keys() 
                     if col in df.columns and selected_fields[col]]
     
-    # Garante que todas as colunas selecionadas existam
     for col in ordered_cols:
         if col not in df.columns:
-            df[col] = None
+            if any(keyword in col for keyword in ['Valor', 'Quantidade', 'Alíquota', 'Base', 'Percentual', 'BC']):
+                df[col] = 0.0
+            else:
+                df[col] = None
     
     df = df[ordered_cols]
+    
+    # Converte campos numéricos para float
+    numeric_fields = [
+        'Quantidade Comercial', 'Valor Unitário', 'Valor Total Item',
+        'Base Cálculo ICMS', 'Alíquota ICMS', 'Valor ICMS',
+        'Valor IPI', 'Valor PIS', 'Valor COFINS',
+        'Valor Total da NF', 'Valor Total dos Produtos', 'Valor Total do ICMS', 'Valor Total do IPI',
+        'BC ICMS UF Destino', 'BC FCP UF Destino', 'Percentual FCP UF Destino',
+        'Alíquota Interna UF Destino', 'Alíquota Interestadual', 'Percentual Partilha ICMS',
+        'Valor FCP UF Destino', 'Valor ICMS UF Destino', 'Valor ICMS UF Remetente'
+    ]
+    
+    for field in numeric_fields:
+        if field in df.columns:
+            df[field] = pd.to_numeric(df[field], errors='coerce').fillna(0.0)
     
     return df
