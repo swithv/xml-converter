@@ -50,278 +50,62 @@ def setup_page():
 
 
 # ============================================
-# TEMA CSS - Separado em arquivo de estilo
+# TEMA CSS - Minimalista (apenas essenciais)
 # ============================================
 def get_custom_css():
-    """Retorna CSS customizado como string."""
+    """Retorna CSS customizado minimalista - apenas cores e branding."""
     return """
     <style>
     /* ========================================
-       IMPORTAÇÕES E RESET
+       APENAS BRANDING E CORES - SEM LAYOUT
     ======================================== */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    * { 
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
-        box-sizing: border-box;
-    }
-    
-    /* ========================================
-       LAYOUT PRINCIPAL
-    ======================================== */
-    .stApp { 
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    }
-    
-    .main .block-container {
-        max-width: 1400px;
-        padding: 2rem 3rem;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 10px 40px rgba(27, 0, 255, 0.08);
-        margin: 2rem auto;
-    }
-    
-    /* ========================================
-       TIPOGRAFIA
-    ======================================== */
+    /* Cor principal nos títulos */
     h1 {
         color: #1B00FF !important;
-        font-weight: 700 !important;
-        font-size: 2.5rem !important;
         text-align: center;
-        margin-bottom: 1rem !important;
     }
     
     h2 {
         color: #2C3E50 !important;
-        font-weight: 600 !important;
-        font-size: 1.75rem !important;
         border-left: 4px solid #1B00FF;
         padding-left: 1rem;
-        margin: 2rem 0 1rem 0 !important;
     }
     
-    h3 {
-        color: #34495E !important;
-        font-weight: 600 !important;
-        font-size: 1.3rem !important;
-        margin-top: 1.5rem !important;
-    }
-    
-    /* ========================================
-       COMPONENTES - TABS
-    ======================================== */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: #f8f9fa;
-        padding: 8px;
-        border-radius: 12px;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        border-radius: 8px;
-        color: #6c757d;
-        font-weight: 500;
-        padding: 0 24px;
-    }
-    
+    /* Cor nos tabs ativos */
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%) !important;
         color: white !important;
-        box-shadow: 0 4px 12px rgba(27, 0, 255, 0.3);
     }
     
-    /* ========================================
-       COMPONENTES - FILE UPLOADER
-    ======================================== */
-    [data-testid="stFileUploader"] {
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-        border: 2px dashed #1B00FF;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 12px rgba(27, 0, 255, 0.08);
-        transition: all 0.3s ease;
-    }
-    
-    [data-testid="stFileUploader"]:hover {
-        box-shadow: 0 8px 24px rgba(27, 0, 255, 0.15);
-        transform: translateY(-2px);
-    }
-    
-    /* ========================================
-       COMPONENTES - BOTÕES
-    ======================================== */
+    /* Cor nos botões */
     .stButton > button,
     .stDownloadButton > button {
         background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 12px !important;
-        padding: 0.75rem 2rem !important;
         font-weight: 600 !important;
-        box-shadow: 0 4px 15px rgba(27, 0, 255, 0.3) !important;
-        transition: all 0.3s ease !important;
     }
     
-    .stButton > button:hover,
-    .stDownloadButton > button:hover {
-        box-shadow: 0 6px 20px rgba(27, 0, 255, 0.4) !important;
-        transform: translateY(-2px) !important;
-    }
-    
-    /* ========================================
-       COMPONENTES - MÉTRICAS
-    ======================================== */
-    [data-testid="stMetric"] {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-        padding: 1.5rem;
-        border-radius: 16px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
-        border: 1px solid #e9ecef;
-        transition: all 0.3s ease;
-    }
-    
-    [data-testid="stMetric"]:hover {
-        box-shadow: 0 8px 24px rgba(27, 0, 255, 0.12);
-        transform: translateY(-4px);
-    }
-    
+    /* Cor nas métricas */
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
         color: #1B00FF !important;
         font-weight: 700 !important;
-        font-size: 2rem !important;
     }
     
-    [data-testid="stMetric"] label {
-        color: #6c757d !important;
-        font-weight: 600 !important;
-    }
-    
-    /* ========================================
-       COMPONENTES - EXPANDERS
-    ======================================== */
-    [data-testid="stExpander"] {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        margin: 0.5rem 0 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-    }
-
+    /* Cor nos expanders */
     [data-testid="stExpander"] summary {
-        font-weight: 600 !important;
         color: #1B00FF !important;
-        padding: 0.75rem 1rem !important;
-        border-radius: 12px !important;
-    }
-
-    [data-testid="stExpander"] > div:nth-child(2) {
-        padding: 0.75rem 1rem !important;
-    }
-
-    /* ========================================
-       COMPONENTES - CHECKBOXES (ESTILO PADRÃO)
-    ======================================== */
-    /* Removido para evitar conflitos - usando estilo nativo do Streamlit */
-
-    /* ========================================
-       COMPONENTES - MULTISELECT
-    ======================================== */
-    [data-testid="stMultiSelect"] {
-        margin: 0.5rem 0 !important;
-        min-height: auto !important;
-    }
-
-    [data-testid="stMultiSelect"] label {
-        margin-bottom: 0.4rem !important;
+        font-weight: 600 !important;
     }
     
+    /* Cor nas tags de multiselect */
     [data-baseweb="tag"] {
         background-color: #1B00FF !important;
         color: white !important;
-        border-radius: 6px !important;
-        font-weight: 500 !important;
     }
     
-    /* ========================================
-       COMPONENTES - ALERTAS
-    ======================================== */
-    .stAlert {
-        border-radius: 12px;
-        border-left-width: 4px;
-        padding: 1rem 1.25rem;
-    }
-    
-    /* ========================================
-       COMPONENTES - DATAFRAME
-    ======================================== */
-    [data-testid="stDataFrame"] {
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-    
-    /* ========================================
-       SCROLLBAR CUSTOMIZADO
-    ======================================== */
-    ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
-    
-    ::-webkit-scrollbar-track {
-        background: #f1f3f5;
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #1B00FF 0%, #5B3FFF 100%);
-        border-radius: 10px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #5B3FFF 0%, #1B00FF 100%);
-    }
-    
-    /* ========================================
-       RESPONSIVIDADE MOBILE
-    ======================================== */
-    @media (max-width: 768px) {
-        .main .block-container {
-            padding: 1rem;
-            margin: 1rem;
-        }
-        
-        h1 { font-size: 1.8rem !important; }
-        h2 { font-size: 1.4rem !important; }
-        
-        [data-testid="stMetric"] [data-testid="stMetricValue"] {
-            font-size: 1.5rem !important;
-        }
-        
-        [data-testid="stExpander"] summary {
-            padding: 0.6rem 0.75rem !important;
-            font-size: 0.9rem !important;
-        }
-        
-        [data-testid="stExpander"] > div:nth-child(2) {
-            padding: 0.75rem !important;
-        }
-        
-        [data-testid="stCheckbox"] {
-            padding: 0.3rem 0 !important;
-        }
-        
-        [data-testid="stCheckbox"] label {
-            font-size: 0.9rem !important;
-        }
-    }
-    
-    /* ========================================
-       OCULTA ELEMENTOS PADRÃO
-    ======================================== */
+    /* Oculta menu padrão */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     header { visibility: hidden; }
