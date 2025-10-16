@@ -167,45 +167,77 @@ def apply_custom_theme():
        EXPANDERS - ESPAÇAMENTO CORRIGIDO
     ======================================== */
     [data-testid="stExpander"] {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    margin: 1rem 0 !important;
-    padding: 0.5rem !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        margin: 0.75rem 0 !important;
+        padding: 0 !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
     [data-testid="stExpander"] summary {
-    font-weight: 600 !important;
-    color: #1B00FF !important;
-    padding: 1rem !important;
-    border-radius: 12px !important;
-    min-height: 50px !important;
+        font-weight: 600 !important;
+        color: #1B00FF !important;
+        padding: 0.75rem 1rem !important;
+        border-radius: 12px !important;
+        min-height: auto !important;
     }
 
     [data-testid="stExpander"] > div:nth-child(2) {
-    padding: 1.5rem !important;
-    margin-top: 0.5rem !important;
+        padding: 1rem !important;
+        margin-top: 0 !important;
     }
 
-    /* Checkbox - espaçamento aumentado */
+    /* Checkbox - corrige alinhamento e espaçamento */
     [data-testid="stCheckbox"] {
-    padding: 0.5rem 0 !important;
-    margin: 0.5rem 0 !important;
-    min-height: 35px !important;
+        padding: 0.4rem 0 !important;
+        margin: 0.3rem 0 !important;
+        min-height: auto !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    /* Label do checkbox - alinha ao lado da checkbox */
+    [data-testid="stCheckbox"] label {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        line-height: 1.4 !important;
+        cursor: pointer !important;
+    }
+
+    /* Input checkbox */
+    [data-testid="stCheckbox"] input[type="checkbox"] {
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+    }
+
+    /* Texto do checkbox */
+    [data-testid="stCheckbox"] label > div {
+        margin: 0 !important;
+        padding: 0 !important;
     }
 
     /* Multiselect - correção de sobreposição */
     [data-testid="stMultiSelect"] {
-    margin: 0.75rem 0 !important;
-    min-height: 60px !important;
+        margin: 0.5rem 0 !important;
+        min-height: auto !important;
     }
 
-    /* Label dos campos */
-    label {
-    display: block !important;
-    margin-bottom: 0.5rem !important;
-    line-height: 1.6 !important;
+    [data-testid="stMultiSelect"] label {
+        margin-bottom: 0.4rem !important;
+    }
+    
+    /* Captions dentro dos expanders */
+    [data-testid="stExpander"] .stMarkdown p {
+        margin: 0.5rem 0 !important;
+        font-size: 0.9rem !important;
+    }
+    
+    [data-testid="stExpander"] .element-container + .element-container {
+        margin-top: 0.3rem !important;
     }
     
     /* ======================================== */
@@ -277,7 +309,19 @@ def apply_custom_theme():
         }
         
         [data-testid="stExpander"] summary {
-            padding: 0.5rem 0.75rem !important;
+            padding: 0.6rem 0.75rem !important;
+            font-size: 0.9rem !important;
+        }
+        
+        [data-testid="stExpander"] > div:nth-child(2) {
+            padding: 0.75rem !important;
+        }
+        
+        [data-testid="stCheckbox"] {
+            padding: 0.3rem 0 !important;
+        }
+        
+        [data-testid="stCheckbox"] label {
             font-size: 0.9rem !important;
         }
     }
