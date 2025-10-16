@@ -167,33 +167,45 @@ def apply_custom_theme():
        EXPANDERS - ESPAÇAMENTO CORRIGIDO
     ======================================== */
     [data-testid="stExpander"] {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 12px;
-        margin: 0.5rem 0 !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin: 1rem 0 !important;
+    padding: 0.5rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
-    
+
     [data-testid="stExpander"] summary {
-        font-weight: 600 !important;
-        color: #1B00FF !important;
-        padding: 0.75rem 1rem !important;
-        border-radius: 12px !important;
+    font-weight: 600 !important;
+    color: #1B00FF !important;
+    padding: 1rem !important;
+    border-radius: 12px !important;
+    min-height: 50px !important;
     }
-    
+
     [data-testid="stExpander"] > div:nth-child(2) {
-        padding: 1rem !important;
+    padding: 1.5rem !important;
+    margin-top: 0.5rem !important;
     }
-    
-    /* Remove espaço extra entre expanders */
-    .element-container:has([data-testid="stExpander"]) {
-        margin-bottom: 0 !important;
-    }
-    
-    /* Checkbox - espaçamento reduzido */
+
+    /* Checkbox - espaçamento aumentado */
     [data-testid="stCheckbox"] {
-        padding: 0.25rem 0 !important;
-        margin: 0.25rem 0 !important;
+    padding: 0.5rem 0 !important;
+    margin: 0.5rem 0 !important;
+    min-height: 35px !important;
+    }
+
+    /* Multiselect - correção de sobreposição */
+    [data-testid="stMultiSelect"] {
+    margin: 0.75rem 0 !important;
+    min-height: 60px !important;
+    }
+
+    /* Label dos campos */
+    label {
+    display: block !important;
+    margin-bottom: 0.5rem !important;
+    line-height: 1.6 !important;
     }
     
     /* ======================================== */
