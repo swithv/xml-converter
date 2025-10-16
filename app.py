@@ -206,8 +206,7 @@ def get_custom_css():
         background-color: #f8f9fa;
         border: 1px solid #e9ecef;
         border-radius: 12px;
-        margin: 0.75rem 0 !important;
-        padding: 0 !important;
+        margin: 0.5rem 0 !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
@@ -216,38 +215,16 @@ def get_custom_css():
         color: #1B00FF !important;
         padding: 0.75rem 1rem !important;
         border-radius: 12px !important;
-        min-height: auto !important;
     }
 
     [data-testid="stExpander"] > div:nth-child(2) {
-        padding: 1rem !important;
-        margin-top: 0 !important;
+        padding: 0.75rem 1rem !important;
     }
 
     /* ========================================
-       COMPONENTES - CHECKBOXES (CORRIGIDO)
+       COMPONENTES - CHECKBOXES (ESTILO PADRÃO)
     ======================================== */
-    [data-testid="stCheckbox"] {
-        padding: 0.4rem 0 !important;
-        margin: 0.3rem 0 !important;
-        min-height: auto !important;
-    }
-
-    [data-testid="stCheckbox"] label {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        line-height: 1.4 !important;
-        cursor: pointer !important;
-    }
-
-    [data-testid="stCheckbox"] input[type="checkbox"] {
-        margin: 0 0.5rem 0 0 !important;
-        flex-shrink: 0 !important;
-    }
+    /* Removido para evitar conflitos - usando estilo nativo do Streamlit */
 
     /* ========================================
        COMPONENTES - MULTISELECT
